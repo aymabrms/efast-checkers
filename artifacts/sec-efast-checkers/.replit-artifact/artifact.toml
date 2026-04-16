@@ -1,0 +1,27 @@
+kind = "web"
+  previewPath = "/"
+  title = "SEC eFAST Checkers"
+  version = "1.0.0"
+  id = "artifacts/sec-efast-checkers"
+  router = "path"
+
+  [[integratedSkills]]
+  name = "react-vite"
+  version = "1.0.0"
+
+  [[services]]
+  name = "web"
+  paths = [ "/" ]
+  localPort = 19613
+
+  [services.development]
+  run = "streamlit run ../../app.py --server.port $PORT --server.address 0.0.0.0"
+
+  [services.production]
+  build = [ "python", "-m", "compileall", "app.py", "config.py", "db.py", "extraction_engine.py", "normalization.py", "pdf_utils.py", "storage.py", "ui_helpers.py", "validation_engine.py", "pages" ]
+  run = "streamlit run ../../app.py --server.port $PORT --server.address 0.0.0.0"
+
+  [services.env]
+  PORT = "19613"
+  BASE_PATH = "/"
+  

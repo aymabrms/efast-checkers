@@ -47,3 +47,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Python / Streamlit
+__pycache__/
+*.py[cod]
+.pytest_cache/
+data/*.sqlite
+uploads/*
+!uploads/.gitkeep

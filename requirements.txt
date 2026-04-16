@@ -1,0 +1,12 @@
+streamlit
+pandas
+pymupdf
+pdfplumber
+pillow
+openpyxl
+openpyxl
+pandas
+pdfplumber
+pillow
+pymupdf
+streamlit

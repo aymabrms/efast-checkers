@@ -1,0 +1,61 @@
+import re
+from typing import Dict, List
+
+from normalization import detect_unit_basis, normalize_label, parse_amount
+
+MANDATORY_LABELS = [
+    "Total Assets",
+    "Total Liabilities",
+    "Total Equity",
+    "Fund Balance",
+    "Cash and Cash Equivalents",
+    "Revenue",
+    "Gross Revenue",
+    "Gross Receipts",
+    "Total Revenue",
+    "Net Sales",
+    "Net Income",
+    "Net Loss",
+    "Operating Cash Flow",
+    "Net Cash Provided by Operating Activities",
+]
+
+
+def extract_figures_from_pages(pages: List[Dict], fiscal_years: List[int]) -> List[Dict]:
+    results = []
+    for page in pages:
+        text = page.get("text_preview") or ""
+        unit_basis = detect_unit_basis(text)
+        for label in MANDATORY_LABELS:
+            for year in fiscal_years:
+                pattern = rf"({re.escape(label)})\s+{year}\s+([\(\)-]?[₱]?[0-9][0-9,]*(?:\.\d+)?\)?)"
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    displayed = match.group(2)
+                    results.append({
+                        "page_number": page.get("page_number"),
+                        "statement_type": page.get("page_type", "Other / Unclassified"),
+                        "raw_label": match.group(1),
+                        "normalized_label": normalize_label(match.group(1)),
+                        "fiscal_year": year,
+                        "displayed_value": displayed,
+                        "normalized_peso_value": parse_amount(displayed, unit_basis),
+                        "unit_basis": unit_basis,
+                        "source_snippet": text[max(0, match.start() - 45):match.end() + 45],
+                        "status": "Needs Review",
+                        "confidence": 0.82,
+                    })
+    return results
+
+
+def fiscal_year_candidates(metadata: Dict) -> List[int]:
+    years = []
+    current = metadata.get("period_covered_year")
+    if current:
+        years.append(int(current))
+    comparative = metadata.get("comparative_years", "")
+    if isinstance(comparative, list):
+        years.extend(int(year) for year in comparative)
+    else:
+        years.extend(int(year) for year in re.findall(r"20\d{2}", str(comparative)))
+    return sorted(set(years), reverse=True)

@@ -1,0 +1,496 @@
+Build me a polished MVP web app prototype called:
+
+SEC eFAST Checkers – AFS Validation and Figure Extraction MVP
+
+IMPORTANT CONTEXT
+This is a prototype for the Securities and Exchange Commission Philippines (SEC Philippines), not the U.S. SEC.
+Do NOT use any U.S. SEC branding, seals, wording, or references.
+Use Philippine SEC context throughout the app.
+The app is inspired by the SEC Philippines eFAST workflow and visual direction, but should be cleaner and more presentation-ready for an internal QA dashboard.
+
+PRIMARY GOAL
+Create an MVP that demonstrates two key values:
+1. Faster QA review of Annual Financial Statements (AFS)
+2. Structured extraction of key AFS financial figures into a reusable database
+
+This prototype is for presentation to ICTD leadership, assistant directors, and supervisors.
+The app should clearly show that it goes beyond simple invalid submission filtering.
+
+MVP SCOPE
+Focus only on AFS for now.
+The prototype must support:
+- document validation
+- page review
+- extraction of selected AFS figures
+- reviewer corrections
+- historical storage and viewing
+- future-ready ranking view
+
+DEFAULT FICTIONAL DEMO COMPANY
+Use this fictional demo company as the default:
+Audentia Fortuna Holdings, Inc.
+
+VERY IMPORTANT EDITABILITY REQUIREMENT
+Make all demo/sample content easy to edit without touching core logic.
+Store editable content in clearly labeled files such as:
+- config.py
+- demo_data.json
+- label_mapping.json
+- revert_reasons.json
+- sample_company_master.json
+
+I want to be able to quickly change:
+- company names
+- SEC registration numbers
+- filing years
+- extracted sample figures
+- revert reasons
+- ranking metric labels
+- UI labels if needed
+
+TECH STACK
+Use:
+- Python
+- Streamlit for the web app
+- SQLite for storage
+- Pandas
+- PyMuPDF and/or pdfplumber for PDF reading
+- Pillow for image handling
+- optional OCR support if available
+- if OCR is weak or unavailable, provide a mock/demo OCR fallback mode for scanned PDFs
+
+Do NOT overcomplicate the prototype.
+Prefer a working, presentation-ready MVP over production complexity.
+
+DESIGN / UI DIRECTION
+Use a hybrid of:
+- eFAST-inspired visual direction
+- cleaner QA dashboard style
+
+Color/theme inspiration:
+- deep SEC/eFAST green
+- white
+- light gray
+- subtle darker green accents
+- no blue-heavy U.S.-style government theme
+
+Design rules:
+- clean dashboard cards
+- readable tables
+- compact reviewer panels
+- clear badges for Passed / Warning / Failed
+- professional internal-government-tool appearance
+- use “SEC Philippines” or “Securities and Exchange Commission Philippines” where appropriate
+- avoid clutter
+- use icons sparingly
+- maintain a polished but lightweight Streamlit layout
+
+HERO SCREEN PRIORITY
+The main hero screen should be:
+1. Extracted Figures Review Table
+
+Secondary hero screen:
+2. Document Review Page with highlighted matches and mismatches
+
+Future-oriented screens:
+- Top 1000 ranking dashboard
+- One-company historical trend page
+
+APP PAGES / NAVIGATION
+Use a sidebar with these pages:
+
+1. Dashboard
+2. Upload / Intake
+3. Document Review
+4. AFS Figures Extraction Review
+5. Historical Company View
+6. Rankings / Research View
+7. Settings / Editable Demo Data
+
+PAGE 1: DASHBOARD
+Show high-level summary cards:
+- Total uploaded documents
+- Documents needing review
+- Accepted recommendations
+- Revert recommendations
+- Extracted figures count
+- Reviewer-corrected entries count
+
+Also show:
+- recent document queue
+- validation summary counts
+- simple mini chart or bar chart if easy
+
+PAGE 2: UPLOAD / INTAKE
+Allow PDF upload.
+Allow entry/edit of these metadata fields:
+- Company Name
+- SEC Registration Number
+- Report Type (default AFS only for now)
+- Period Covered Year
+- Comparative Years
+- Submission Type
+- Filing Year
+
+Save uploaded files locally in an uploads folder.
+Store metadata in SQLite.
+
+Also provide a “Load Demo Document” button so the app still works nicely in demo mode.
+
+PAGE 3: DOCUMENT REVIEW
+This page should simulate how QA reviewers inspect the document.
+
+Requirements:
+- show document preview / page list
+- show each page number
+- show extracted text preview
+- show detected page type
+- show validation results
+- highlight matched text where possible for:
+  - company name
+  - period covered year(s)
+- highlight mismatches if found
+- show suggested revert reason
+- allow reviewer remarks entry
+- show final recommendation:
+  - Accept
+  - Revert
+  - Needs Review
+
+VALIDATION LOGIC
+Use these source-of-truth rules:
+1. Compare against eFAST metadata:
+   - Period covered
+   - Submission type
+2. Compare against company master data:
+   - SEC registration number
+   - Company name
+   - Period covered years
+
+Company name matching should be fuzzy/flexible and still treat these as likely matches:
+- punctuation differences
+- spacing differences
+- line breaks
+- “Inc.” vs “Corp.”
+- extra phrases such as “a wholly owned subsidiary of …”
+
+REVERT REASONS DROPDOWN
+Use this exact editable list as the default:
+- Wrong company profile
+- Wrong period covered
+- Wrong submission type
+- Poor image quality
+- Wrong page orientation
+- Incomplete pages
+- Incorrect document filed
+- Erroneous document
+
+The system should suggest a revert reason automatically based on findings, but allow the reviewer to change it manually.
+
+AFS PERIOD-COVERED VALIDATION RULE
+Use this page priority:
+1. Auditor’s Report = primary source of truth
+2. Statement of Management’s Responsibility = secondary consistency check
+3. Notes to Financial Statements page 1 = supporting check
+4. Figures pages should also match current and comparative years
+
+PAGE CLASSIFICATION
+Use simple keyword/rule-based page classification for AFS:
+- Statement of Management’s Responsibility
+- Cover Sheet
+- Independent Auditor’s Report
+- Statement of Financial Position / Balance Sheet
+- Statement of Income / Receipts and Expenses
+- Statement of Comprehensive Income
+- Statement of Changes in Equity / Fund Balance
+- Statement of Cash Flows
+- Notes to Financial Statements
+- Other / Unclassified
+
+Do not overengineer with ML for the MVP.
+Keyword/rule-based logic is enough.
+
+ORIENTATION HANDLING
+If a page is landscape:
+- mark as Warning, not automatic Fail
+- allow legitimate landscape financial tables such as Statement of Changes in Equity
+- distinguish between valid wide pages and clearly wrong sideways orientation if possible
+
+POOR IMAGE QUALITY HANDLING
+Use simple heuristics such as:
+- very low extracted text
+- weak page readability
+- empty/near-empty page text
+Mark these as Warning or Fail depending on severity.
+
+PAGE COMPLETENESS CHECK
+For AFS, check whether key sections are likely present:
+- Statement of Management’s Responsibility
+- Auditor’s Report
+- Balance Sheet / Statement of Financial Position
+- Income Statement / Statement of Income
+- Statement of Comprehensive Income
+- Statement of Changes in Equity
+- Statement of Cash Flows
+- Notes to Financial Statements
+
+If some are missing, flag incomplete pages.
+
+PAGE 4: AFS FIGURES EXTRACTION REVIEW
+This should be the most polished page in the app.
+
+Extract these mandatory fields:
+- Total Assets
+- Total Liabilities
+- Total Equity
+- Fund Balance
+- Cash and Cash Equivalents
+- Revenue
+- Gross Revenue
+- Gross Receipts
+- Total Revenue
+- Net Sales
+- Net Income
+- Net Loss
+- Operating Cash Flow
+
+NORMALIZATION
+Create a normalization mapping layer so multiple labels can map to standard internal fields.
+
+Examples:
+- Revenue / Total Revenue / Gross Revenue / Gross Receipts / Net Sales -> normalized revenue bucket
+- Net Income / Net Loss / Excess of Receipts Over Expenses -> normalized net income bucket
+- Fund Balance -> total_equity
+
+Keep both:
+- raw label
+- normalized label
+
+YEAR EXTRACTION
+Capture and store:
+- current filing year
+- comparative prior year
+- if present, additional prior year such as 2022
+The app should support multiple year columns when possible.
+
+AMOUNT STORAGE RULE
+Store both:
+- displayed amount as shown in the report
+- normalized peso value
+If the report indicates “Amounts in Thousands” or similar, normalize accordingly.
+
+REVIEW TABLE REQUIREMENTS
+Show an editable review table with columns like:
+- page number
+- statement type
+- raw label
+- normalized label
+- fiscal year
+- displayed value
+- normalized peso value
+- source snippet
+- status
+- reviewer edited?
+- reviewed value
+
+Allow the reviewer to:
+- manually correct values
+- mark entries as reviewed
+- save corrections to database
+- export the table to CSV / Excel-ready format
+
+OPTIONAL NICE-TO-HAVE:
+Show a simple confidence column if easy, but this is not high priority.
+
+PAGE 5: HISTORICAL COMPANY VIEW
+Create a simple historical view for one company across years.
+
+Default demo:
+Audentia Fortuna Holdings, Inc.
+Simulate a 5-year history:
+2021 to 2025
+
+Show a clean table of extracted figures by year and field.
+Also show one or two simple trend charts if easy, such as:
+- Gross Revenue trend
+- Total Assets trend
+- Net Income trend
+
+This page should help demonstrate the long-term value of structured extraction.
+
+PAGE 6: RANKINGS / RESEARCH VIEW
+This is a future-facing screen but include a basic version now.
+
+Default ranking metric:
+- Gross Revenue
+
+Also allow these metric options:
+- Total Revenue
+- Gross Receipts
+- Net Sales
+
+Show a simple ranked list/table of companies by selected metric.
+It can use demo/sample data for now.
+Include export to CSV.
+
+This screen is not the hero screen, but it should hint at future institutional value like Top 1000 company extraction.
+
+PAGE 7: SETTINGS / EDITABLE DEMO DATA
+Create a page that clearly explains where demo content lives and what can be edited.
+Show:
+- current demo company master record
+- current revert reasons list
+- current label mapping
+- current ranking metrics
+- sample explanation of how to update demo JSON/config files
+
+DATABASE TABLES
+Create SQLite tables such as:
+- documents
+- company_master
+- page_analysis
+- validations
+- extracted_figures
+- reviewer_actions
+
+Suggested fields:
+
+documents
+- id
+- filename
+- company_name
+- sec_registration_no
+- report_type
+- period_covered_year
+- comparative_years
+- submission_type
+- filing_year
+- uploaded_at
+
+company_master
+- id
+- company_name
+- sec_registration_no
+- period_covered_year
+- comparative_years
+
+page_analysis
+- id
+- document_id
+- page_number
+- page_type
+- orientation
+- text_preview
+- detected_company_match
+- detected_period_match
+- image_quality_flag
+
+validations
+- id
+- document_id
+- rule_name
+- status
+- message
+- suggested_revert_reason
+
+extracted_figures
+- id
+- document_id
+- page_number
+- statement_type
+- raw_label
+- normalized_label
+- fiscal_year
+- displayed_value
+- normalized_peso_value
+- unit_basis
+- source_snippet
+- reviewer_edited
+- reviewed_value
+- review_status
+
+reviewer_actions
+- id
+- document_id
+- reviewer_remarks
+- final_recommendation
+- final_revert_reason
+- updated_at
+
+DEMO DATA REQUIREMENTS
+Include demo/sample content for:
+- one fictional company: Audentia Fortuna Holdings, Inc.
+- one sample AFS validation case
+- one sample extracted figure dataset
+- one 5-year historical dataset from 2021–2025
+- one small company ranking dataset
+
+Make demo data realistic enough for presentation, but clearly fictional.
+
+PROJECT STRUCTURE
+Use modular files, for example:
+
+app.py
+db.py
+config.py
+demo_data.json
+label_mapping.json
+revert_reasons.json
+sample_company_master.json
+pdf_utils.py
+validation_engine.py
+extraction_engine.py
+normalization.py
+storage.py
+pages/
+README.md
+requirements.txt
+
+DOCUMENT PARSING BEHAVIOR
+The app should work in two modes:
+1. Real parsing mode for readable PDFs
+2. Demo fallback mode for scanned/uncertain PDFs
+
+If OCR is not strong enough, do NOT break the app.
+Instead:
+- show a “Needs Review” state
+- allow use of demo/mock extracted content
+- keep the prototype presentation-ready
+
+PROTOTYPE COPY / TEXT TONE
+Use professional internal-tool wording such as:
+- “Suggested Revert Reason”
+- “Reviewer Remarks”
+- “Final Recommendation”
+- “Matched Source Text”
+- “Extracted Figures Review”
+- “Historical Financial Data”
+- “Research Ranking View”
+
+Do not use language that sounds consumer-facing or U.S.-regulator-specific.
+
+RUNNABILITY
+The project must run in Replit.
+Provide:
+- requirements.txt
+- README.md
+- setup instructions
+- how to launch the app
+- which features are real vs mocked
+
+FINAL OUTPUT REQUIREMENT
+After generating the project, show me:
+1. Project structure
+2. Key files for editable demo content
+3. How to run the app
+4. What parts are actually working
+5. What parts are simulated/mock for demo purposes
+
+MOST IMPORTANT PRIORITIES
+1. The app must look good enough for presentation
+2. The Extracted Figures Review page must be the strongest screen
+3. The app must clearly show both:
+   - AFS validation
+   - AFS structured data extraction
+4. The content must be SEC Philippines-oriented
+5. The demo/sample content must be easy to edit later
