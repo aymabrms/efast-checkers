@@ -50,7 +50,7 @@ def render():
             "normalized_peso_value": st.column_config.NumberColumn("Normalized Peso Value", disabled=True, format="₱%.0f"),
             "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True),
             "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
-            "confidence": st.column_config.ProgressColumn("Confidence", min_value=0, max_value=1, disabled=True),
+            "confidence": st.column_config.NumberColumn("Confidence", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
             "review_status": st.column_config.SelectboxColumn("Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]),
             "reviewer_edited": st.column_config.CheckboxColumn("Reviewer Edited?", disabled=True),
             "reviewed_value": st.column_config.TextColumn("Reviewed Value"),
