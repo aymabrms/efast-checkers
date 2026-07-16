@@ -17,7 +17,7 @@ def render():
         col1, col2 = st.columns(2)
         with col1:
             company_name = st.text_input("Company Name", DEFAULT_COMPANY)
-            sec_no = st.text_input("SEC Registration Number", "CS202102938")
+            sec_no = st.text_input("SEC Registration Number", "")
             report_type = st.text_input("Report Type", DEFAULT_REPORT_TYPE)
             period_year = st.number_input("Period Covered Year", min_value=2000, max_value=2100, value=DEFAULT_PERIOD_YEAR)
         with col2:
@@ -38,10 +38,13 @@ def render():
             "filing_year": int(filing_year),
         }
         document_id = insert_document(metadata)
-        raw_pages = []
+        raw_pages: list = []
         if uploaded:
             saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
-            raw_pages = extract_pdf_pages(saved_path)
+            raw_pages, extraction_errors = extract_pdf_pages(saved_path)
+            if extraction_errors:
+                for err in extraction_errors:
+                    st.warning(f"PDF parser issue: {err}")
         company_master = load_company_master()
         if raw_pages:
             pages = analyze_pages(raw_pages, metadata, company_master)
@@ -55,7 +58,10 @@ def render():
             pages = analyze_pages(demo["sample_pages"], metadata, company_master)
             validations = validate_document(pages, metadata, company_master)
             figures = demo["sample_figures"]
-            st.warning("PDF text extraction was unavailable or weak. Demo fallback mode is active and the document is marked for review.")
+            if uploaded:
+                st.warning("PDF text extraction produced no pages. Demo fallback data has been loaded for reviewer simulation — actual document content was not extracted.")
+            else:
+                st.warning("No PDF was uploaded. Demo fallback mode is active.")
         replace_document_analysis(document_id, pages, validations, figures)
         st.session_state["active_document_id"] = document_id
         st.success(f"Document #{document_id} saved and analyzed.")

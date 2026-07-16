@@ -34,3 +34,5 @@ RANKING_METRICS = [
 ]
 
 STATUS_ORDER = ["Passed", "Warning", "Failed", "Needs Review"]
+
+TEXT_PREVIEW_MAX_CHARS = 2000

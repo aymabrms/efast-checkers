@@ -38,7 +38,10 @@ def metric_card(label: str, value, caption: str = "") -> None:
 
 def format_peso(value) -> str:
     try:
-        return "₱{:,.0f}".format(float(value))
+        f = float(value)
+        if f != f:
+            return "—"
+        return "₱{:,.0f}".format(f)
     except Exception:
         return str(value)
 
@@ -62,6 +65,6 @@ def show_document_selector(documents: List[Dict], key: str):
         st.info("No documents are stored yet. Use Upload / Intake or load the demo document.")
         return None
     labels = [f"#{doc['id']} — {doc['company_name']} — {doc['period_covered_year']}" for doc in documents]
+    id_by_label = {label: doc["id"] for label, doc in zip(labels, documents)}
     selected = st.selectbox("Document", labels, key=key)
-    index = labels.index(selected)
-    return documents[index]["id"]
+    return id_by_label[selected]

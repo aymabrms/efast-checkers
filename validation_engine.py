@@ -2,9 +2,12 @@ import re
 from difflib import SequenceMatcher
 from typing import Dict, List
 
+from config import TEXT_PREVIEW_MAX_CHARS
+from pdf_utils import quality_flag
+
 REQUIRED_SECTIONS = [
-    "Statement of Management’s Responsibility",
-    "Independent Auditor’s Report",
+    "Statement of Management's Responsibility",
+    "Independent Auditor's Report",
     "Statement of Financial Position / Balance Sheet",
     "Statement of Income / Receipts and Expenses",
     "Statement of Comprehensive Income",
@@ -14,9 +17,9 @@ REQUIRED_SECTIONS = [
 ]
 
 PAGE_RULES = [
-    ("Statement of Management’s Responsibility", ["management", "responsibility", "financial statements"]),
+    ("Statement of Management's Responsibility", ["management", "responsibility", "financial statements"]),
     ("Cover Sheet", ["cover sheet", "sec registration", "company information"]),
-    ("Independent Auditor’s Report", ["independent auditor", "we have audited", "auditor's report", "auditor’s report"]),
+    ("Independent Auditor's Report", ["independent auditor", "we have audited", "auditor's report", "auditor\u2019s report"]),
     ("Statement of Financial Position / Balance Sheet", ["financial position", "balance sheet", "total assets", "total liabilities"]),
     ("Statement of Income / Receipts and Expenses", ["statement of income", "receipts and expenses", "net income", "gross revenue"]),
     ("Statement of Comprehensive Income", ["comprehensive income", "other comprehensive"]),
@@ -64,12 +67,12 @@ def analyze_pages(raw_pages: List[Dict], metadata: Dict, company_master: Dict) -
     for page in raw_pages:
         text = page.get("text") or page.get("text_preview") or ""
         page_type = page.get("page_type") or classify_page(text)
-        flag = page.get("image_quality_flag") or ("Failed" if len(text.strip()) < 25 else "Warning" if len(text.strip()) < 140 else "Passed")
+        flag = page.get("image_quality_flag") or quality_flag(text)
         analyzed.append({
             "page_number": page.get("page_number"),
             "page_type": page_type,
             "orientation": page.get("orientation", "Portrait"),
-            "text_preview": page.get("text_preview") or text[:1200],
+            "text_preview": page.get("text_preview") or text[:TEXT_PREVIEW_MAX_CHARS],
             "detected_company_match": fuzzy_company_match(text, company_name),
             "detected_period_match": has_period(text, period_year),
             "image_quality_flag": flag,
@@ -89,7 +92,7 @@ def validate_document(pages: List[Dict], metadata: Dict, company_master: Dict) -
         "suggested_revert_reason": "" if company_ok else "Wrong company profile",
     })
     year = int(metadata.get("period_covered_year") or company_master.get("period_covered_year", 0))
-    priority_pages = [page for page in pages if page.get("page_type") in ["Independent Auditor’s Report", "Statement of Management’s Responsibility", "Notes to Financial Statements"]]
+    priority_pages = [page for page in pages if page.get("page_type") in ["Independent Auditor's Report", "Statement of Management's Responsibility", "Notes to Financial Statements"]]
     period_ok = any(str(year) in page.get("text_preview", "") for page in priority_pages) or str(year) in all_text
     validations.append({
         "rule_name": "AFS period covered",

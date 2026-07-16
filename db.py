@@ -75,7 +75,7 @@ def init_db() -> None:
     );
     CREATE TABLE IF NOT EXISTS reviewer_actions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        document_id INTEGER,
+        document_id INTEGER UNIQUE,
         reviewer_remarks TEXT,
         final_recommendation TEXT,
         final_revert_reason TEXT,
@@ -151,13 +151,24 @@ def replace_document_analysis(document_id: int, pages: List[Dict], validations: 
 
 
 def save_reviewer_action(document_id: int, remarks: str, recommendation: str, revert_reason: str) -> None:
-    execute(
-        """
-        INSERT INTO reviewer_actions (document_id, reviewer_remarks, final_recommendation, final_revert_reason, updated_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (document_id, remarks, recommendation, revert_reason, datetime.now().isoformat(timespec="seconds")),
-    )
+    existing = query("SELECT id FROM reviewer_actions WHERE document_id = ?", (document_id,))
+    if existing:
+        execute(
+            """
+            UPDATE reviewer_actions
+            SET reviewer_remarks = ?, final_recommendation = ?, final_revert_reason = ?, updated_at = ?
+            WHERE document_id = ?
+            """,
+            (remarks, recommendation, revert_reason, datetime.now().isoformat(timespec="seconds"), document_id),
+        )
+    else:
+        execute(
+            """
+            INSERT INTO reviewer_actions (document_id, reviewer_remarks, final_recommendation, final_revert_reason, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (document_id, remarks, recommendation, revert_reason, datetime.now().isoformat(timespec="seconds")),
+        )
 
 
 def update_figure_reviews(document_id: int, rows: List[Dict]) -> None:

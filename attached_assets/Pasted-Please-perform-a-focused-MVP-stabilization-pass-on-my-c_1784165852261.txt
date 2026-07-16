@@ -1,0 +1,64 @@
+Please perform a focused MVP stabilization pass on my current SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT redesign the app
+- Do NOT add new major features
+- Do NOT touch Historical View or Rankings yet
+- Keep changes minimal, safe, and presentation-focused
+- Inspect the current code first before editing
+- Only fix the issues listed below
+- After making changes, tell me exactly which files were updated and why
+
+Scope: Fix demo overwrite and fragile errors before our July brown bag demo.
+
+Please fix these exact issues:
+
+1. Demo document overwrite bug
+- Find ensure_demo_document() and stop it from overwriting existing demo analysis data on every cold start
+- Preserve reviewer corrections and reviewer disposition for the demo document
+- Seed the demo document only if it does not already exist
+- If the demo document already exists, reuse it instead of delete-and-reinsert
+
+2. Silent PDF extraction failures
+- In pdf_utils.py, stop silently swallowing exceptions
+- If PyMuPDF or pdfplumber fails, log the error and show a user-friendly warning in the UI
+- Do not crash the whole app if one parser fails
+- Keep fallback behavior, but make it transparent
+
+3. Fix ₱nan and empty metric bugs
+- In figures_review.py, fix the hero revenue metric so it never displays ₱nan
+- If there is no revenue-like row, show a safe fallback such as “₱0” or “No detected revenue”
+- Inspect similar metric cards for the same bug pattern and patch them too if present
+
+4. Fix stale or ambiguous document selection issues
+- Review show_document_selector() and prevent collisions when two documents share the same company name and year
+- Use document id internally as the unique selector value
+- Make the displayed label human-readable, but selection must be unambiguous
+
+5. Remove misleading default intake values
+- In upload_intake.py, remove the hardcoded SEC registration default so the field starts blank unless intentionally loaded from demo data
+
+6. Reduce fragile preview truncation risk
+- Review the 1200-character text_preview truncation usage
+- Increase it if needed or centralize it into one constant
+- Keep the UI responsive, but reduce false negatives from over-truncation
+
+7. Consolidate duplicated quality flag logic
+- If the quality/readability flag logic is duplicated across files, move it into one shared function and reuse it
+
+8. reviewer_actions duplicate writes
+- Fix reviewer_actions so saving a reviewer disposition updates the current record for the document instead of endlessly inserting duplicate current-state rows
+- Keep history only if the current implementation clearly supports it; otherwise prefer stable current-state behavior for the MVP
+
+Constraints:
+- No new dependencies unless absolutely necessary
+- No database redesign beyond safe minimal schema changes
+- Keep current SEC Philippines UI and styling
+- Preserve existing demo mode
+
+Output I want after the patch:
+1. Short summary of what was fixed
+2. Exact files changed
+3. Any schema changes made
+4. Any assumptions or edge cases
+5. Confirmation that the app still runs

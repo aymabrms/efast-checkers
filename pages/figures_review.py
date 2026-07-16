@@ -5,6 +5,8 @@ from db import update_figure_reviews
 from storage import get_document, get_documents, get_figures
 from ui_helpers import dataframe_download, format_peso, metric_card, show_document_selector
 
+REVENUE_LABELS = {"gross_revenue", "total_revenue", "revenue"}
+
 
 def render():
     st.header("AFS Figures Extraction Review")
@@ -21,15 +23,22 @@ def render():
         return
 
     df = pd.DataFrame(figures)
+
+    rev_values = df[df["normalized_label"].isin(REVENUE_LABELS)]["normalized_peso_value"].dropna()
+    rev_display = format_peso(rev_values.max()) if not rev_values.empty else "No detected revenue"
+
+    fiscal_years = sorted(df["fiscal_year"].unique(), reverse=True)
+    fiscal_years_display = ", ".join(str(x) for x in fiscal_years) if len(fiscal_years) > 0 else "—"
+
     hero_cols = st.columns(4)
     with hero_cols[0]:
         metric_card("Rows Extracted", len(df), "Ready for reviewer validation")
     with hero_cols[1]:
         metric_card("Normalized Fields", df["normalized_label"].nunique(), "Reusable figure buckets")
     with hero_cols[2]:
-        metric_card("Fiscal Years", ", ".join(str(x) for x in sorted(df["fiscal_year"].unique(), reverse=True)), "Current and comparative")
+        metric_card("Fiscal Years", fiscal_years_display, "Current and comparative")
     with hero_cols[3]:
-        metric_card("Current Revenue", format_peso(df[df["normalized_label"].isin(["gross_revenue", "total_revenue", "revenue"])] ["normalized_peso_value"].max()), "Normalized peso value")
+        metric_card("Current Revenue", rev_display, "Normalized peso value")
 
     st.subheader(f"Extracted Figures Review Table — {document['company_name']}")
     review_cols = ["id", "page_number", "statement_type", "raw_label", "normalized_label", "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis", "source_snippet", "confidence", "review_status", "reviewer_edited", "reviewed_value"]
@@ -50,7 +59,7 @@ def render():
             "normalized_peso_value": st.column_config.NumberColumn("Normalized Peso Value", disabled=True, format="₱%.0f"),
             "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True),
             "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
-            "confidence": st.column_config.NumberColumn("Confidence", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
+            "confidence": st.column_config.NumberColumn("Confidence (est.)", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
             "review_status": st.column_config.SelectboxColumn("Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]),
             "reviewer_edited": st.column_config.CheckboxColumn("Reviewer Edited?", disabled=True),
             "reviewed_value": st.column_config.TextColumn("Reviewed Value"),

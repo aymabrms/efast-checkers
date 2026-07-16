@@ -39,6 +39,9 @@ def ensure_demo_document() -> int:
     existing = query("SELECT id FROM documents WHERE filename = ? ORDER BY id DESC LIMIT 1", (metadata["filename"],))
     if existing:
         document_id = existing[0]["id"]
+        has_analysis = query("SELECT 1 FROM page_analysis WHERE document_id = ? LIMIT 1", (document_id,))
+        if has_analysis:
+            return document_id
     else:
         document_id = insert_document(metadata)
     pages = []
