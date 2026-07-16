@@ -1,0 +1,158 @@
+Please inspect my entire current prototype codebase and perform a full product and technical audit.
+
+Context:
+This project is a prototype called SEC eFAST Checkers, built for SEC Philippines internal use. It is an MVP for AFS validation, page-level review, figure extraction, historical company view, and rankings/research view. The prototype is not production-ready yet. I want you to assess the current state of the whole app and give me a realistic roadmap for future development.
+
+What I want from you:
+
+1. Full codebase inspection
+- Review the entire current codebase, file structure, page modules, config/demo data files, database logic, extraction logic, validation logic, UI flow, and current reusable components.
+- Do not just summarize filenames. Inspect how the app actually works today.
+
+2. Product audit
+Evaluate the prototype from a product perspective:
+- What features are already working well
+- What feels MVP-ready
+- What feels incomplete, simulated, fragile, or misleading
+- What features are strongest for presentation
+- What product gaps remain before this can become a serious internal tool
+- What screens/modules are redundant, confusing, or underdeveloped
+- What should be improved first for user value
+
+3. Technical audit
+Evaluate the prototype from an engineering perspective:
+- code organization and modularity
+- maintainability
+- readability
+- duplication
+- hardcoded logic
+- demo-data dependence
+- config/editability
+- error handling
+- data model quality
+- extraction logic quality
+- validation logic quality
+- scoring/confidence logic quality
+- scalability concerns
+- likely bugs / weak spots
+- streamlit-specific issues
+- performance concerns
+- export/data persistence concerns
+- database design concerns
+
+4. Distinguish clearly between:
+- actually working features
+- partially working / fragile features
+- mocked / simulated features
+- future-placeholder features
+
+5. UX / UI audit
+Review the current prototype screens and flow:
+- dashboard
+- upload/intake
+- document review
+- AFS figures extraction review
+- historical company view
+- rankings/research view
+- settings/demo data
+
+Assess:
+- clarity
+- usefulness
+- consistency
+- presentation quality
+- internal-tool feel
+- navigation quality
+- visual hierarchy
+- whether the app tells the story of the proposal well
+
+6. Architecture and data flow review
+Explain the current implied architecture:
+- intake
+- parsing
+- validation
+- page review
+- extraction
+- normalization
+- review correction
+- storage
+- historical reporting
+- rankings
+
+Then identify where the architecture is weak and what needs to be refactored later.
+
+7. Security / governance / realism review
+Even though this is only a prototype, identify what would matter later for internal deployment:
+- audit trail
+- reviewer action logging
+- access control
+- document storage strategy
+- production database concerns
+- handling scanned PDFs and OCR uncertainty
+- human-in-the-loop controls
+- explainability of confidence scores
+
+8. Delivery risk assessment
+Tell me:
+- what parts are easy to evolve
+- what parts may become technical debt
+- what parts may block future scale
+- what should be redesigned earlier rather than later
+
+9. Future development roadmap
+Create a practical phased roadmap based on the current codebase.
+
+I want the roadmap in phases such as:
+- Phase 1: MVP stabilization
+- Phase 2: better reviewer intelligence
+- Phase 3: stronger extraction and historical reporting
+- Phase 4: production-readiness foundations
+
+For each phase, provide:
+- goal
+- recommended features
+- technical changes needed
+- UX/UI improvements needed
+- dependencies
+- priority level
+- risk level
+- estimated implementation difficulty
+
+10. Prioritized recommendations
+Give me:
+- Top 5 product improvements
+- Top 5 technical improvements
+- Top 5 presentation/demo improvements
+- Top 5 long-term production considerations
+
+11. Final verdict
+At the end, give me:
+- overall current maturity level of the prototype
+- whether it is already strong enough for presentation
+- what its strongest differentiators are
+- what its weakest areas are
+- what should be improved next if I only have limited time
+
+Output format:
+Please structure your answer in these sections:
+1. Executive Summary
+2. What the Prototype Currently Does Well
+3. Current Gaps and Weaknesses
+4. Product Audit
+5. Technical Audit
+6. UX/UI Audit
+7. Working vs Mocked Features
+8. Architecture Review
+9. Key Risks
+10. Recommended Roadmap
+11. Top Priorities for Next Iteration
+12. Final Verdict
+
+Important instructions:
+- Be honest and specific
+- Base your answer on the actual current codebase, not assumptions
+- Point out exact weak files/modules/patterns where relevant
+- Do not rewrite the app yet
+- This is an audit and roadmap task first
+- If something is unclear or simulated, explicitly say so
+- Treat this as both a product review and an engineering design review
