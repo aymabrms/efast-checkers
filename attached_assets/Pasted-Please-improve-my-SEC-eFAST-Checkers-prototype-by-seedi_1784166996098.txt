@@ -1,0 +1,67 @@
+Please improve my SEC eFAST Checkers prototype by seeding 2–3 realistic demo documents for presentation.
+
+Important:
+- Do NOT redesign the app
+- Do NOT implement real multi-company extraction yet
+- Keep the existing fictional/Philippine SEC demo context
+- Use clearly fictional companies
+- Keep the seeded data easy to edit later
+- Inspect the current demo/document seeding approach before changing anything
+
+Goal:
+Make the Dashboard, Document Review, and Figures Review pages feel more realistic for a July brown bag session.
+
+Please create 3 seeded demo documents with distinct states:
+
+1. Document A — Recommended Accept
+- Good company match
+- Good period match
+- Good readability
+- Proper sections present
+- Clean figure extraction
+- Reviewer disposition can remain empty or default to Accept recommendation
+
+2. Document B — Needs Review
+- Mostly correct, but with one or two warnings
+- Example issues:
+  - one landscape statement page that is likely valid
+  - one missing section detection
+  - one lower-confidence figure row
+- Final recommendation should default to Needs Review
+
+3. Document C — Recommended Revert
+- Clear mismatch or issue
+- Example:
+  - wrong period covered
+  - wrong company profile on a key page
+  - poor readability or incomplete pages
+- Final recommendation should clearly support Revert candidate
+
+Implementation requirements:
+- Seed these documents in a way that does not overwrite existing reviewer changes every restart
+- Keep the data editable in demo/config files where possible
+- Make the Dashboard reflect all 3 documents
+- Ensure each document can be opened in Document Review and Figures Review
+- Use fictional companies appropriate for Philippine corporate filings
+- Keep Audentia Fortuna Holdings, Inc. as one of them if already central to the demo
+
+Suggested additional fictional companies:
+- Malaya Northstar Manufacturing Corp.
+- Haraya Logistics and Trade, Inc.
+
+Please also:
+- Make the Dashboard metrics meaningful with these 3 documents
+- Ensure statuses are visibly different across the seeded records
+- Keep the seeded data presentation-ready and internally consistent
+
+Constraints:
+- No major database redesign
+- No historical/rankings DB integration yet
+- Keep demo data easy to edit
+- Do not add too many records; only 3 polished examples
+
+Output I want:
+1. The 3 seeded demo documents you created
+2. Their intended recommendation state
+3. What files were updated
+4. How the seeding now avoids overwriting user/demo review work

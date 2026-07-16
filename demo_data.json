@@ -19,14 +19,14 @@
     },
     {
       "page_number": 2,
-      "page_type": "Statement of Management’s Responsibility",
+      "page_type": "Statement of Management's Responsibility",
       "orientation": "Portrait",
       "text_preview": "Management of Audentia Fortuna Holdings Inc. is responsible for the preparation and fair presentation of the financial statements for the years ended December 31, 2025 and 2024.",
       "image_quality_flag": "Passed"
     },
     {
       "page_number": 3,
-      "page_type": "Independent Auditor’s Report",
+      "page_type": "Independent Auditor's Report",
       "orientation": "Portrait",
       "text_preview": "We have audited the financial statements of Audentia Fortuna Holdings, Inc., which comprise the statements of financial position as at December 31, 2025 and 2024, and the statements of income, comprehensive income, changes in equity and cash flows for the years then ended.",
       "image_quality_flag": "Passed"
@@ -62,7 +62,7 @@
   ],
   "sample_validations": [
     {"rule_name": "Company master data match", "status": "Passed", "message": "Company name and SEC registration number align with master record.", "suggested_revert_reason": ""},
-    {"rule_name": "AFS period covered", "status": "Passed", "message": "Auditor’s Report supports 2025 with comparative 2024 figures.", "suggested_revert_reason": ""},
+    {"rule_name": "AFS period covered", "status": "Passed", "message": "Auditor's Report supports 2025 with comparative 2024 figures.", "suggested_revert_reason": ""},
     {"rule_name": "Submission type", "status": "Passed", "message": "Document content is consistent with Annual Financial Statements.", "suggested_revert_reason": ""},
     {"rule_name": "Orientation review", "status": "Warning", "message": "One landscape page detected; likely a valid wide financial table.", "suggested_revert_reason": "Wrong page orientation"},
     {"rule_name": "Completeness check", "status": "Warning", "message": "Statement of Comprehensive Income is not separately detected in demo pages.", "suggested_revert_reason": "Incomplete pages"}
@@ -91,5 +91,126 @@
     {"rank_hint": 3, "company_name": "Haraya Logistics and Trade, Inc.", "sec_registration_no": "CS201906381", "Gross Revenue": 2380500000, "Total Revenue": 2417700000, "Gross Receipts": 2362000000, "Net Sales": 2299000000},
     {"rank_hint": 4, "company_name": "Luntian Bay Food Ventures Corp.", "sec_registration_no": "CS202004115", "Gross Revenue": 1994000000, "Total Revenue": 2050500000, "Gross Receipts": 1968000000, "Net Sales": 1887000000},
     {"rank_hint": 5, "company_name": "Dalisay Renewable Holdings, Inc.", "sec_registration_no": "CS201711203", "Gross Revenue": 1749000000, "Total Revenue": 1812500000, "Gross Receipts": 1721000000, "Net Sales": 1643000000}
+  ],
+  "demo_suite": [
+    {
+      "metadata": {
+        "filename": "audentia_fortuna_afs_2025_demo.pdf",
+        "company_name": "Audentia Fortuna Holdings, Inc.",
+        "sec_registration_no": "CS202102938",
+        "report_type": "AFS",
+        "period_covered_year": 2025,
+        "comparative_years": "2024, 2023",
+        "submission_type": "Annual Financial Statements",
+        "filing_year": 2026
+      },
+      "pages": [
+        {"page_number": 1, "page_type": "Cover Sheet", "orientation": "Portrait", "text_preview": "SEC Philippines eFAST cover sheet for Audentia Fortuna Holdings, Inc. SEC Registration No. CS202102938. Annual Financial Statements for the year ended December 31, 2025 with comparative figures for 2024 and 2023.", "image_quality_flag": "Passed"},
+        {"page_number": 2, "page_type": "Statement of Management's Responsibility", "orientation": "Portrait", "text_preview": "Management of Audentia Fortuna Holdings Inc. is responsible for the preparation and fair presentation of the financial statements for the years ended December 31, 2025 and 2024.", "image_quality_flag": "Passed"},
+        {"page_number": 3, "page_type": "Independent Auditor's Report", "orientation": "Portrait", "text_preview": "We have audited the financial statements of Audentia Fortuna Holdings, Inc., which comprise the statements of financial position as at December 31, 2025 and 2024, and the statements of income, comprehensive income, changes in equity and cash flows for the years then ended.", "image_quality_flag": "Passed"},
+        {"page_number": 4, "page_type": "Statement of Financial Position / Balance Sheet", "orientation": "Landscape", "text_preview": "Statements of Financial Position Amounts in Philippine pesos. Cash and Cash Equivalents 2025 186,450,000 2024 142,200,000. Total Assets 2025 1,248,900,000 2024 1,074,500,000. Total Liabilities 2025 512,300,000 2024 455,100,000. Total Equity 2025 736,600,000 2024 619,400,000.", "image_quality_flag": "Passed"},
+        {"page_number": 5, "page_type": "Statement of Income / Receipts and Expenses", "orientation": "Portrait", "text_preview": "Statements of Income Amounts in Thousands of Philippine pesos. Gross Revenue 2025 2,847,200 2024 2,426,900. Total Revenue 2025 2,901,400 2024 2,501,300. Net Sales 2025 2,710,800 2024 2,310,200. Net Income 2025 318,600 2024 244,500.", "image_quality_flag": "Passed"},
+        {"page_number": 6, "page_type": "Statement of Cash Flows", "orientation": "Portrait", "text_preview": "Statements of Cash Flows Amounts in Philippine pesos. Net Cash Provided by Operating Activities 2025 371,250,000 2024 289,400,000.", "image_quality_flag": "Passed"},
+        {"page_number": 7, "page_type": "Notes to Financial Statements", "orientation": "Portrait", "text_preview": "Notes to Financial Statements page 1. Audentia Fortuna Holdings, Inc. was registered with the Securities and Exchange Commission Philippines under SEC Registration No. CS202102938. The accompanying financial statements cover December 31, 2025 with comparative figures for 2024 and 2023.", "image_quality_flag": "Passed"}
+      ],
+      "validations": [
+        {"rule_name": "Company master data match", "status": "Passed", "message": "Company name and SEC registration number align with master record.", "suggested_revert_reason": ""},
+        {"rule_name": "AFS period covered", "status": "Passed", "message": "Auditor's Report supports 2025 with comparative 2024 figures.", "suggested_revert_reason": ""},
+        {"rule_name": "Submission type", "status": "Passed", "message": "Document content is consistent with Annual Financial Statements.", "suggested_revert_reason": ""},
+        {"rule_name": "Orientation review", "status": "Warning", "message": "One landscape page detected (page 4); likely a valid wide financial table. Please confirm.", "suggested_revert_reason": "Wrong page orientation"},
+        {"rule_name": "Completeness check", "status": "Warning", "message": "Statement of Comprehensive Income is not separately detected in submitted pages.", "suggested_revert_reason": "Incomplete pages"},
+        {"rule_name": "Image readability", "status": "Passed", "message": "Extracted text is adequate for MVP review.", "suggested_revert_reason": ""}
+      ],
+      "figures": [
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Cash and Cash Equivalents", "normalized_label": "cash_and_cash_equivalents", "fiscal_year": 2025, "displayed_value": "186,450,000", "normalized_peso_value": 186450000, "unit_basis": "Pesos", "source_snippet": "Cash and Cash Equivalents 2025 186,450,000 2024 142,200,000", "status": "Needs Review", "confidence": 0.91},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Assets", "normalized_label": "total_assets", "fiscal_year": 2025, "displayed_value": "1,248,900,000", "normalized_peso_value": 1248900000, "unit_basis": "Pesos", "source_snippet": "Total Assets 2025 1,248,900,000 2024 1,074,500,000", "status": "Needs Review", "confidence": 0.94},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Liabilities", "normalized_label": "total_liabilities", "fiscal_year": 2025, "displayed_value": "512,300,000", "normalized_peso_value": 512300000, "unit_basis": "Pesos", "source_snippet": "Total Liabilities 2025 512,300,000 2024 455,100,000", "status": "Needs Review", "confidence": 0.92},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Equity", "normalized_label": "total_equity", "fiscal_year": 2025, "displayed_value": "736,600,000", "normalized_peso_value": 736600000, "unit_basis": "Pesos", "source_snippet": "Total Equity 2025 736,600,000 2024 619,400,000", "status": "Needs Review", "confidence": 0.9},
+        {"page_number": 5, "statement_type": "Statement of Income / Receipts and Expenses", "raw_label": "Gross Revenue", "normalized_label": "gross_revenue", "fiscal_year": 2025, "displayed_value": "2,847,200", "normalized_peso_value": 2847200000, "unit_basis": "Thousands", "source_snippet": "Gross Revenue 2025 2,847,200 2024 2,426,900", "status": "Needs Review", "confidence": 0.89},
+        {"page_number": 5, "statement_type": "Statement of Income / Receipts and Expenses", "raw_label": "Total Revenue", "normalized_label": "total_revenue", "fiscal_year": 2025, "displayed_value": "2,901,400", "normalized_peso_value": 2901400000, "unit_basis": "Thousands", "source_snippet": "Total Revenue 2025 2,901,400 2024 2,501,300", "status": "Needs Review", "confidence": 0.88},
+        {"page_number": 5, "statement_type": "Statement of Income / Receipts and Expenses", "raw_label": "Net Income", "normalized_label": "net_income", "fiscal_year": 2025, "displayed_value": "318,600", "normalized_peso_value": 318600000, "unit_basis": "Thousands", "source_snippet": "Net Income 2025 318,600 2024 244,500", "status": "Needs Review", "confidence": 0.9},
+        {"page_number": 6, "statement_type": "Statement of Cash Flows", "raw_label": "Net Cash Provided by Operating Activities", "normalized_label": "operating_cash_flow", "fiscal_year": 2025, "displayed_value": "371,250,000", "normalized_peso_value": 371250000, "unit_basis": "Pesos", "source_snippet": "Net Cash Provided by Operating Activities 2025 371,250,000 2024 289,400,000", "status": "Needs Review", "confidence": 0.86}
+      ],
+      "default_recommendation": "Needs Review",
+      "default_revert_reason": "Wrong page orientation",
+      "default_remarks": "Landscape page and missing Comprehensive Income section flagged. Reviewer should confirm page 4 orientation is intentional before accepting."
+    },
+    {
+      "metadata": {
+        "filename": "malaya_northstar_afs_2025_demo.pdf",
+        "company_name": "Malaya Northstar Manufacturing Corp.",
+        "sec_registration_no": "CS201815742",
+        "report_type": "AFS",
+        "period_covered_year": 2025,
+        "comparative_years": "2024, 2023",
+        "submission_type": "Annual Financial Statements",
+        "filing_year": 2026
+      },
+      "pages": [
+        {"page_number": 1, "page_type": "Cover Sheet", "orientation": "Portrait", "text_preview": "SEC Philippines eFAST cover sheet for Malaya Northstar Manufacturing Corp. SEC Registration No. CS201815742. Annual Financial Statements for the year ended December 31, 2025 with comparative figures for 2024 and 2023.", "image_quality_flag": "Passed"},
+        {"page_number": 2, "page_type": "Statement of Management's Responsibility", "orientation": "Portrait", "text_preview": "Management of Malaya Northstar Manufacturing Corp. is responsible for the preparation and fair presentation of the financial statements in accordance with Philippine Financial Reporting Standards for the years ended December 31, 2025 and 2024. CS201815742.", "image_quality_flag": "Passed"},
+        {"page_number": 3, "page_type": "Independent Auditor's Report", "orientation": "Portrait", "text_preview": "We have audited the financial statements of Malaya Northstar Manufacturing Corp. SEC Registration No. CS201815742, which comprise the statements of financial position as at December 31, 2025 and 2024, the statements of income, comprehensive income, changes in equity and cash flows for the years then ended, and notes to financial statements.", "image_quality_flag": "Passed"},
+        {"page_number": 4, "page_type": "Statement of Financial Position / Balance Sheet", "orientation": "Portrait", "text_preview": "Statements of Financial Position Malaya Northstar Manufacturing Corp. Amounts in Philippine pesos. Cash and Cash Equivalents 2025 94,200,000 2024 78,600,000. Total Assets 2025 980,400,000 2024 841,700,000. Total Liabilities 2025 423,100,000 2024 371,400,000. Total Equity 2025 557,300,000 2024 470,300,000.", "image_quality_flag": "Passed"},
+        {"page_number": 5, "page_type": "Statement of Comprehensive Income", "orientation": "Portrait", "text_preview": "Statement of Comprehensive Income Malaya Northstar Manufacturing Corp. Amounts in Thousands of Philippine pesos. Gross Revenue 2025 2,591,800 2024 2,213,400. Total Revenue 2025 2,644,100 2024 2,268,700. Net Sales 2025 2,466,000 2024 2,104,000. Net Income 2025 194,600 2024 155,200.", "image_quality_flag": "Passed"},
+        {"page_number": 6, "page_type": "Statement of Cash Flows", "orientation": "Portrait", "text_preview": "Statements of Cash Flows Malaya Northstar Manufacturing Corp. Amounts in Philippine pesos. Net Cash Provided by Operating Activities 2025 276,500,000 2024 218,300,000.", "image_quality_flag": "Passed"},
+        {"page_number": 7, "page_type": "Statement of Changes in Equity / Fund Balance", "orientation": "Portrait", "text_preview": "Statement of Changes in Equity Malaya Northstar Manufacturing Corp. December 31, 2025. Balance at beginning of period 470,300,000. Net income for the year 194,600,000. Dividends declared (107,600,000). Balance at end of period 557,300,000.", "image_quality_flag": "Passed"},
+        {"page_number": 8, "page_type": "Notes to Financial Statements", "orientation": "Portrait", "text_preview": "Notes to Financial Statements. Malaya Northstar Manufacturing Corp. was registered with the Securities and Exchange Commission Philippines under SEC Registration No. CS201815742. The accompanying financial statements cover December 31, 2025 with comparative figures for 2024 and 2023.", "image_quality_flag": "Passed"}
+      ],
+      "validations": [
+        {"rule_name": "Company master data match", "status": "Passed", "message": "Company name and SEC registration number CS201815742 are consistently referenced across all key pages.", "suggested_revert_reason": ""},
+        {"rule_name": "AFS period covered", "status": "Passed", "message": "Auditor's Report, Management's Responsibility, and Notes all confirm period covered December 31, 2025.", "suggested_revert_reason": ""},
+        {"rule_name": "Submission type", "status": "Passed", "message": "Document content is consistent with Annual Financial Statements.", "suggested_revert_reason": ""},
+        {"rule_name": "Orientation review", "status": "Passed", "message": "No landscape pages detected. All pages are standard portrait orientation.", "suggested_revert_reason": ""},
+        {"rule_name": "Completeness check", "status": "Passed", "message": "All key AFS sections detected: Management's Responsibility, Auditor's Report, Balance Sheet, Comprehensive Income, Cash Flows, Changes in Equity, Notes.", "suggested_revert_reason": ""},
+        {"rule_name": "Image readability", "status": "Passed", "message": "Extracted text is adequate across all pages.", "suggested_revert_reason": ""}
+      ],
+      "figures": [
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Cash and Cash Equivalents", "normalized_label": "cash_and_cash_equivalents", "fiscal_year": 2025, "displayed_value": "94,200,000", "normalized_peso_value": 94200000, "unit_basis": "Pesos", "source_snippet": "Cash and Cash Equivalents 2025 94,200,000 2024 78,600,000", "status": "Needs Review", "confidence": 0.93},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Assets", "normalized_label": "total_assets", "fiscal_year": 2025, "displayed_value": "980,400,000", "normalized_peso_value": 980400000, "unit_basis": "Pesos", "source_snippet": "Total Assets 2025 980,400,000 2024 841,700,000", "status": "Needs Review", "confidence": 0.95},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Liabilities", "normalized_label": "total_liabilities", "fiscal_year": 2025, "displayed_value": "423,100,000", "normalized_peso_value": 423100000, "unit_basis": "Pesos", "source_snippet": "Total Liabilities 2025 423,100,000 2024 371,400,000", "status": "Needs Review", "confidence": 0.94},
+        {"page_number": 4, "statement_type": "Statement of Financial Position / Balance Sheet", "raw_label": "Total Equity", "normalized_label": "total_equity", "fiscal_year": 2025, "displayed_value": "557,300,000", "normalized_peso_value": 557300000, "unit_basis": "Pesos", "source_snippet": "Total Equity 2025 557,300,000 2024 470,300,000", "status": "Needs Review", "confidence": 0.93},
+        {"page_number": 5, "statement_type": "Statement of Comprehensive Income", "raw_label": "Gross Revenue", "normalized_label": "gross_revenue", "fiscal_year": 2025, "displayed_value": "2,591,800", "normalized_peso_value": 2591800000, "unit_basis": "Thousands", "source_snippet": "Gross Revenue 2025 2,591,800 2024 2,213,400", "status": "Needs Review", "confidence": 0.91},
+        {"page_number": 5, "statement_type": "Statement of Comprehensive Income", "raw_label": "Total Revenue", "normalized_label": "total_revenue", "fiscal_year": 2025, "displayed_value": "2,644,100", "normalized_peso_value": 2644100000, "unit_basis": "Thousands", "source_snippet": "Total Revenue 2025 2,644,100 2024 2,268,700", "status": "Needs Review", "confidence": 0.9},
+        {"page_number": 5, "statement_type": "Statement of Comprehensive Income", "raw_label": "Net Income", "normalized_label": "net_income", "fiscal_year": 2025, "displayed_value": "194,600", "normalized_peso_value": 194600000, "unit_basis": "Thousands", "source_snippet": "Net Income 2025 194,600 2024 155,200", "status": "Needs Review", "confidence": 0.92},
+        {"page_number": 6, "statement_type": "Statement of Cash Flows", "raw_label": "Net Cash Provided by Operating Activities", "normalized_label": "operating_cash_flow", "fiscal_year": 2025, "displayed_value": "276,500,000", "normalized_peso_value": 276500000, "unit_basis": "Pesos", "source_snippet": "Net Cash Provided by Operating Activities 2025 276,500,000 2024 218,300,000", "status": "Needs Review", "confidence": 0.9}
+      ],
+      "default_recommendation": "Accept",
+      "default_revert_reason": "",
+      "default_remarks": "All validation rules passed. Company identity, period coverage, completeness, readability, and submission type are all confirmed. Recommended for acceptance."
+    },
+    {
+      "metadata": {
+        "filename": "haraya_logistics_afs_2025_demo.pdf",
+        "company_name": "Haraya Logistics and Trade, Inc.",
+        "sec_registration_no": "CS201906381",
+        "report_type": "AFS",
+        "period_covered_year": 2025,
+        "comparative_years": "2024, 2023",
+        "submission_type": "Annual Financial Statements",
+        "filing_year": 2026
+      },
+      "pages": [
+        {"page_number": 1, "page_type": "Cover Sheet", "orientation": "Portrait", "text_preview": "SEC Philippines eFAST cover sheet for Haraya Logistics and Trade, Inc. SEC Registration No. CS201906381. Annual Financial Statements for the year ended December 31, 2025 with comparative figures for 2024 and 2023.", "image_quality_flag": "Passed"},
+        {"page_number": 2, "page_type": "Statement of Management's Responsibility", "orientation": "Portrait", "text_preview": "Management of Haraya Transport Services, Inc. is responsible for the preparation and fair presentation of the financial statements in accordance with Philippine Financial Reporting Standards for the year ended December 31, 2024.", "image_quality_flag": "Warning"},
+        {"page_number": 3, "page_type": "Independent Auditor's Report", "orientation": "Portrait", "text_preview": "We have audited the financial statements of Haraya Transport Services, Inc., which comprise the statements of financial position as at December 31, 2024 and 2023, and the statements of income for the year then ended. CS201906381.", "image_quality_flag": "Warning"},
+        {"page_number": 4, "page_type": "Statement of Financial Position / Balance Sheet", "orientation": "Portrait", "text_preview": "Sttm nts f Fi ncl Pst n", "image_quality_flag": "Failed"},
+        {"page_number": 5, "page_type": "Notes to Financial Statements", "orientation": "Portrait", "text_preview": "Notes to Financial Statements. Haraya Logistics and Trade, Inc. The financial statements cover the year ended December 31, 2024. SEC Registration No. CS201906381.", "image_quality_flag": "Passed"}
+      ],
+      "validations": [
+        {"rule_name": "Company master data match", "status": "Failed", "message": "Management's Responsibility and Auditor's Report reference 'Haraya Transport Services, Inc.' which does not match the registered entity name 'Haraya Logistics and Trade, Inc.'", "suggested_revert_reason": "Wrong company profile"},
+        {"rule_name": "AFS period covered", "status": "Failed", "message": "Auditor's Report and Management's Responsibility reference December 31, 2024 — not 2025 as stated in the submission header.", "suggested_revert_reason": "Wrong period covered"},
+        {"rule_name": "Submission type", "status": "Passed", "message": "Document references financial statements consistent with AFS submission type.", "suggested_revert_reason": ""},
+        {"rule_name": "Orientation review", "status": "Passed", "message": "No landscape pages detected.", "suggested_revert_reason": ""},
+        {"rule_name": "Completeness check", "status": "Warning", "message": "Missing or not detected: Statement of Income, Statement of Comprehensive Income, Statement of Changes in Equity, Statement of Cash Flows.", "suggested_revert_reason": "Incomplete pages"},
+        {"rule_name": "Image readability", "status": "Failed", "message": "1 page has very low extracted text (page 4 — Balance Sheet). Document may be partially scanned or corrupted.", "suggested_revert_reason": "Poor image quality"}
+      ],
+      "figures": [
+        {"page_number": 5, "statement_type": "Notes to Financial Statements", "raw_label": "Gross Revenue", "normalized_label": "gross_revenue", "fiscal_year": 2024, "displayed_value": "2,380,500", "normalized_peso_value": 2380500000, "unit_basis": "Thousands", "source_snippet": "Gross Revenue 2024 2,380,500 2023 2,014,200", "status": "Needs Review", "confidence": 0.54},
+        {"page_number": 5, "statement_type": "Notes to Financial Statements", "raw_label": "Net Income", "normalized_label": "net_income", "fiscal_year": 2024, "displayed_value": "187,400", "normalized_peso_value": 187400000, "unit_basis": "Thousands", "source_snippet": "Net Income 2024 187,400 2023 144,100", "status": "Needs Review", "confidence": 0.51}
+      ],
+      "default_recommendation": "Revert",
+      "default_revert_reason": "Wrong company profile",
+      "default_remarks": "Company name mismatch on key pages (Haraya Transport Services, Inc. vs. Haraya Logistics and Trade, Inc.). Period covered on Auditor's Report shows 2024, not 2025. Balance sheet page is unreadable. Recommend revert for re-submission."
+    }
   ]
 }

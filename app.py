@@ -3,7 +3,7 @@ import streamlit as st
 from config import AGENCY_NAME, APP_SUBTITLE, APP_TITLE
 from db import init_db
 from pages import dashboard, document_review, figures_review, historical_company, rankings, settings_demo_data, upload_intake
-from storage import ensure_demo_document, seed_company_master
+from storage import ensure_all_demo_documents, seed_company_master
 
 PAGES = {
     "Dashboard": dashboard.render,
@@ -47,7 +47,7 @@ def bootstrap():
     init_db()
     seed_company_master()
     if "active_document_id" not in st.session_state:
-        st.session_state["active_document_id"] = ensure_demo_document()
+        st.session_state["active_document_id"] = ensure_all_demo_documents()
 
 
 def main():
@@ -67,8 +67,10 @@ def main():
     st.sidebar.caption("Philippine AFS QA dashboard prototype")
     page = st.sidebar.radio("Navigation", list(PAGES.keys()))
     st.sidebar.divider()
-    st.sidebar.caption("Default demo company")
+    st.sidebar.caption("Demo documents")
     st.sidebar.write("Audentia Fortuna Holdings, Inc.")
+    st.sidebar.write("Malaya Northstar Manufacturing Corp.")
+    st.sidebar.write("Haraya Logistics and Trade, Inc.")
     PAGES[page]()
 
 
