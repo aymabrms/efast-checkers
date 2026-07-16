@@ -1,0 +1,63 @@
+Please do a focused honesty-and-clarity pass on my SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT redesign the app
+- Do NOT implement computed confidence yet
+- Do NOT connect Historical View or Rankings to the DB yet
+- Keep the app presentation-ready, but make simulated features honest and non-misleading
+- Inspect the current code first, then patch only the scoped items below
+
+Goal:
+Make it clear during our July brown bag which parts are live, which parts are estimated, and which parts are demo projections.
+
+Please implement these exact changes:
+
+1. Confidence labeling
+- Anywhere confidence is currently hardcoded, relabel it clearly as demo/estimated confidence
+- Examples:
+  - “Estimated Confidence”
+  - “Demo Confidence”
+  - “Estimated (Prototype)”
+- Keep the values visible if helpful for presentation, but do not present them as real ML scoring
+
+2. Historical Company View disclaimer
+- Add a visible but clean note that this screen is currently a demo projection and does not yet reflect live uploaded extraction data
+- The note should be honest but not embarrassing
+- Suggested tone:
+  “Prototype projection based on seeded demo data. In future phases, this view will be connected to extracted figures stored in the database.”
+
+3. Rankings / Research View disclaimer
+- Add a similar clear note that rankings are currently based on seeded demo data
+- Keep export working if already working
+- Do not remove the page
+
+4. Upload fallback disclosure
+- If upload_intake.py falls back to demo figures because extraction failed, make that state more explicit in the UI
+- The document should not look like it was fully extracted from the uploaded PDF if demo fallback was used
+- Add a visible warning or analysis source label such as:
+  - “Demo extraction fallback used”
+  - “Prototype fallback data applied”
+
+5. Settings / Demo Data wording
+- Clarify that the settings page is currently a reference page for editable demo files, not a live editor
+- Make the wording more explicit and professional
+
+6. Add subtle status tags where useful
+- Example tags:
+  - Live DB Data
+  - Demo Projection
+  - Estimated
+  - Fallback Used
+- Use these sparingly and professionally
+
+Constraints:
+- Keep all current pages
+- Keep current green SEC Philippines styling
+- Do not add new backend complexity
+- Do not overdo warning banners; aim for credible presentation wording
+
+Output I want:
+1. What labels/disclaimers were added
+2. Which pages were changed
+3. Exact files changed
+4. Any wording suggestions you used

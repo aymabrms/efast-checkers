@@ -10,6 +10,11 @@ def render():
     st.header("Rankings / Research View")
     st.caption("Future-ready research screen for ranked company extraction, including Top 1000-style institutional use cases.")
 
+    st.info(
+        "**Demo Projection** — Rankings are currently based on seeded demo data. "
+        "In future phases, this view will rank companies using figures extracted and reviewed across all uploaded filings."
+    )
+
     demo = load_demo_data()
     df = pd.DataFrame(demo["ranking_data"])
     metric = st.selectbox("Ranking Metric", RANKING_METRICS, index=0)

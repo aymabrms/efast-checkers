@@ -16,6 +16,14 @@ def render():
     if not document_id:
         return
     st.session_state["active_document_id"] = document_id
+
+    if st.session_state.get("last_fallback_doc_id") == document_id:
+        st.warning(
+            "⚠️ **Prototype Fallback Data Applied** — The figures below were not extracted from the uploaded PDF. "
+            "Demo data was substituted because extraction did not produce results. "
+            "Review and correct values as needed before treating them as authoritative."
+        )
+
     document = get_document(document_id)
     figures = get_figures(document_id)
     if not figures:
@@ -59,7 +67,7 @@ def render():
             "normalized_peso_value": st.column_config.NumberColumn("Normalized Peso Value", disabled=True, format="₱%.0f"),
             "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True),
             "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
-            "confidence": st.column_config.NumberColumn("Confidence (est.)", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
+            "confidence": st.column_config.NumberColumn("Estimated Confidence", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
             "review_status": st.column_config.SelectboxColumn("Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]),
             "reviewer_edited": st.column_config.CheckboxColumn("Reviewer Edited?", disabled=True),
             "reviewed_value": st.column_config.TextColumn("Reviewed Value"),

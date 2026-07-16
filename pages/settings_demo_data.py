@@ -13,9 +13,14 @@ def render_json(title, data):
 
 def render():
     st.header("Settings / Editable Demo Data")
-    st.caption("Demo content is separated from core logic so presentation values can be changed quickly.")
+    st.caption("Reference guide for the demo content files that control presentation values in this prototype.")
 
-    st.info("Edit the JSON and config files listed below to change company names, SEC registration numbers, filing years, sample figures, revert reasons, normalized labels, and ranking metrics.")
+    st.info(
+        "**Reference Only — No Live Editing** — This page documents the editable demo content files used by this prototype. "
+        "To change company names, SEC registration numbers, filing years, sample figures, or ranking data, "
+        "edit the JSON and config files listed below directly on the server. "
+        "A future version of this page will expose a live configuration editor."
+    )
 
     st.subheader("Editable Content Files")
     st.table([

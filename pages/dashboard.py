@@ -10,6 +10,12 @@ def render():
     st.header("Dashboard")
     st.caption("SEC Philippines AFS intake, validation, and extraction overview for reviewer operations.")
 
+    st.markdown(
+        "<span class='badge' style='background:#d9f7e8;color:#0f6b43'>Live DB Data</span> "
+        "All metrics and queues below reflect documents currently stored in the database.",
+        unsafe_allow_html=True,
+    )
+
     documents = get_documents()
     validations = query("SELECT status, COUNT(*) AS count FROM validations GROUP BY status")
     figures_count = query("SELECT COUNT(*) AS count FROM extracted_figures")

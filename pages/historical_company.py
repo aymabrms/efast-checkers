@@ -9,6 +9,12 @@ def render():
     st.header("Historical Company View")
     st.caption("One-company historical financial data view showing long-term value from structured AFS extraction.")
 
+    st.info(
+        "**Demo Projection** — This view is currently based on seeded demo data and does not yet reflect "
+        "live uploaded extraction data. In future phases, this view will be populated from figures "
+        "extracted and reviewed in the database."
+    )
+
     master = load_company_master()
     demo = load_demo_data()
     df = pd.DataFrame(demo["historical_data"])

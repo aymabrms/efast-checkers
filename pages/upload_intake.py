@@ -39,6 +39,7 @@ def render():
         }
         document_id = insert_document(metadata)
         raw_pages: list = []
+        used_fallback = False
         if uploaded:
             saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
             raw_pages, extraction_errors = extract_pdf_pages(saved_path)
@@ -52,17 +53,31 @@ def render():
             figures = extract_figures_from_pages(pages, fiscal_year_candidates(metadata))
             if not figures:
                 figures = load_demo_data()["sample_figures"]
-                st.warning("Readable text was found, but figure extraction was limited. Demo extraction rows were loaded for reviewer simulation.")
+                used_fallback = True
+                st.warning(
+                    "⚠️ **Prototype Fallback Data Applied** — Readable text was found in the PDF, "
+                    "but no figures matched the extraction pattern. Demo extraction rows have been "
+                    "loaded in place of real extracted values. Figures shown do not reflect this document."
+                )
         else:
             demo = load_demo_data()
             pages = analyze_pages(demo["sample_pages"], metadata, company_master)
             validations = validate_document(pages, metadata, company_master)
             figures = demo["sample_figures"]
+            used_fallback = True
             if uploaded:
-                st.warning("PDF text extraction produced no pages. Demo fallback data has been loaded for reviewer simulation — actual document content was not extracted.")
+                st.warning(
+                    "⚠️ **Prototype Fallback Data Applied** — PDF text extraction produced no pages. "
+                    "Demo fallback data has been loaded for reviewer simulation. "
+                    "Figures shown do not reflect the content of the uploaded document."
+                )
             else:
-                st.warning("No PDF was uploaded. Demo fallback mode is active.")
+                st.warning("⚠️ **Prototype Fallback Data Applied** — No PDF was uploaded. Demo data has been loaded.")
         replace_document_analysis(document_id, pages, validations, figures)
+        if used_fallback:
+            st.session_state["last_fallback_doc_id"] = document_id
+        else:
+            st.session_state.pop("last_fallback_doc_id", None)
         st.session_state["active_document_id"] = document_id
         st.success(f"Document #{document_id} saved and analyzed.")
 
