@@ -1,4 +1,5 @@
 import html
+from datetime import datetime
 from typing import Dict, Iterable, List, Optional
 
 import pandas as pd
@@ -45,15 +46,20 @@ def format_peso(value) -> str:
         v = float(value)
         if v != v:  # NaN check
             return "₱—"
-        if abs(v) >= 1_000_000_000:
-            return f"₱{v/1_000_000_000:.2f}B"
-        if abs(v) >= 1_000_000:
-            return f"₱{v/1_000_000:.2f}M"
-        if abs(v) >= 1_000:
-            return f"₱{v/1_000:.2f}K"
-        return f"₱{v:,.0f}"
+        return f"₱{v:,.2f}"
     except (TypeError, ValueError):
         return "₱—"
+
+
+def format_timestamp_pst(ts: str) -> str:
+    """Format an ISO datetime string as '16 Jul 2026, 9:59 AM PST'."""
+    if not ts:
+        return "—"
+    try:
+        dt = datetime.fromisoformat(str(ts)[:19])
+        return dt.strftime("%-d %b %Y, %-I:%M %p PST")
+    except (ValueError, TypeError):
+        return str(ts)[:16] if ts else "—"
 
 
 def highlight_terms(text: str, terms: List[str]) -> str:

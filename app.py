@@ -31,6 +31,7 @@ def apply_styles():
         .stApp { background: linear-gradient(180deg, #f3f7f4 0%, #f8faf8 42%, #ffffff 100%); }
         section[data-testid="stSidebar"] { background: #0d4f39; }
         section[data-testid="stSidebar"] * { color: #ffffff !important; }
+        [data-testid="stSidebarNav"] { display: none !important; }
         .main .block-container { padding-top: 1.5rem; max-width: 1440px; }
         .app-hero { background: linear-gradient(135deg, #0f5b3f, #083627); color: #fff; padding: 1.35rem 1.5rem; border-radius: 18px; margin-bottom: 1.25rem; box-shadow: 0 18px 40px rgba(6, 53, 37, .16); }
         .app-hero h1 { margin: 0; color: #fff; font-size: 2rem; letter-spacing: -0.02em; }

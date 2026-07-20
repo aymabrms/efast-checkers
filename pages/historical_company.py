@@ -30,4 +30,4 @@ def render():
 
     st.subheader("Trend Charts")
     chart_df = df.set_index("year")
-    st.line_chart(chart_df[["Gross Revenue", "Total Assets", "Net Income"]])
+    st.line_chart(chart_df[["Gross Revenue", "Total Assets", "Net Income"]], color=["#0f5b3f", "#2e8b57", "#90c4a4"])

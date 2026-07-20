@@ -1,0 +1,147 @@
+Please do one final low-risk presentation polish pass on my current SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT redesign the app
+- Do NOT add new features
+- Do NOT change business logic
+- Do NOT touch seeded demo document logic
+- Do NOT change import/navigation logic in app.py unless absolutely necessary
+- Do NOT refactor modules beyond small formatting/UI cleanup
+- Keep all current demo flows working
+
+Goal:
+Improve only the final presentation polish for the July brown bag by cleaning up navigation, wording, timestamps, number formatting, and chart colors.
+
+This pass must stay low-risk and minimal.
+
+Please implement only these scoped changes:
+
+-----------------------------------
+1. REMOVE / HIDE DUPLICATE TOP NAVIGATION
+-----------------------------------
+
+Problem:
+There is a redundant upper navigation block showing items like:
+- app
+- dashboard
+- document review
+- figures review
+etc.
+
+This makes the prototype look more raw and is not helping the presentation.
+
+Tasks:
+- Remove or hide the duplicate top navigation block if possible
+- Keep only the cleaner left sidebar navigation
+- Preserve current page switching behavior
+- Do not break the sidebar navigation
+- Do not change the existing reviewer/document state logic
+
+If removing it safely is difficult, apply the smallest safe workaround that visually hides or suppresses it.
+
+-----------------------------------
+2. SIMPLIFY REPETITIVE "SEC PHILIPPINES" WORDING
+-----------------------------------
+
+Problem:
+The app repeats “SEC Philippines” / “Securities and Exchange Commission Philippines” in places where it is already obvious to the audience.
+
+Tasks:
+- Review visible page headers, hero subtitles, and repeated UI text
+- Simplify wording where appropriate
+- Prefer concise labels such as:
+  - SEC eFAST Checkers
+  - AFS Validation and Figure Extraction MVP
+  - Securities and Exchange Commission
+- Remove unnecessary repeated “Philippines” wording if it does not add value
+- Keep the context professional and government-appropriate
+- Do not remove the identity of SEC entirely
+
+This is wording cleanup only, not content redesign.
+
+-----------------------------------
+3. FORMAT TIMESTAMPS IN HUMAN-READABLE PST
+-----------------------------------
+
+Problem:
+Dashboard timestamps currently look too system-generated (for example ISO-like datetime strings).
+
+Tasks:
+- Format visible timestamps into a presentation-friendly format using PST
+- Use a human-readable display such as:
+  - 16 Jul 2026, 9:59 AM PST
+  - or July 16, 2026 – 9:59 AM PST
+- Apply this especially to Dashboard queue timestamps and other visible uploaded/review timestamps if present
+- Keep the underlying stored value unchanged if possible; this is display formatting only
+- Use PST consistently in the UI
+
+-----------------------------------
+4. FORMAT FINANCIAL VALUES AS FULL PESO AMOUNTS
+-----------------------------------
+
+Problem:
+Some figures are shown as abbreviated billions, which is less appropriate for this prototype and less realistic for AFS review.
+
+Tasks:
+- Replace abbreviated displays like:
+  - ₱2.90B
+  - ₱1.25B
+  - ₱2.85B
+with full peso values using:
+- peso sign
+- commas
+- 2 decimal places
+
+Examples:
+- ₱2,901,400,000.00
+- ₱1,248,900,000.00
+- ₱2,847,200,000.00
+
+Apply this to visible financial metrics where presentation currently uses B/M abbreviation, especially:
+- Figures Review hero metrics
+- Historical Company View headline metrics
+- Rankings display values
+- Any reusable format_peso helper if that is the safest place
+
+Very important:
+- Keep values realistic and readable
+- Do not change the underlying numbers, only the display format
+- Avoid breaking tables that currently rely on numeric sorting
+
+-----------------------------------
+5. OPTIONAL: ALIGN CHART COLORS TO THE GREEN THEME
+-----------------------------------
+
+If easy and low-risk:
+- Update chart colors from default blue to a palette that better matches the green SEC/eFAST visual theme
+- Keep charts readable and conservative
+- Do not spend much effort here if it risks breaking the charts
+
+This is optional. Only do it if it is easy and safe.
+
+-----------------------------------
+6. PRESERVE STABILITY
+-----------------------------------
+
+Very important:
+- Keep Dashboard, Document Review, and Figures Review fully working
+- Keep Open in Review working
+- Keep reviewer banner/history intact
+- Keep seeded demo documents intact
+- Keep disclaimers on Historical and Rankings intact
+- Do not touch extraction/validation logic
+- Do not change DB schema unless absolutely unnecessary
+
+-----------------------------------
+OUTPUT I WANT
+-----------------------------------
+
+After implementing only this scope, stop and summarize:
+
+1. What was changed for navigation cleanup
+2. What wording was simplified
+3. What timestamp formatting was updated
+4. What financial value formatting was updated
+5. Whether chart colors were adjusted
+6. Exact files changed
+7. Confirmation that the app still runs

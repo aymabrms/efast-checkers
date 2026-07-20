@@ -24,5 +24,5 @@ def render():
 
     st.metric("Highest Ranked Company", ranked.iloc[0]["company_name"], ranked.iloc[0]["Display Value"])
     st.dataframe(ranked[["Rank", "company_name", "sec_registration_no", metric, "Display Value"]], width="stretch", hide_index=True)
-    st.bar_chart(ranked.set_index("company_name")[metric])
+    st.bar_chart(ranked.set_index("company_name")[metric], color="#0f5b3f")
     dataframe_download(ranked, f"research_ranking_{metric.lower().replace(' ', '_')}.csv", "Export Ranking CSV")

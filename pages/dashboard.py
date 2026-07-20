@@ -3,7 +3,7 @@ import streamlit as st
 
 from db import query
 from storage import get_documents
-from ui_helpers import metric_card, recommendation_badge, status_badge
+from ui_helpers import format_timestamp_pst, metric_card, recommendation_badge, status_badge
 
 # Filenames that belong to seeded demo documents
 _DEMO_FILENAMES = {
@@ -15,7 +15,7 @@ _DEMO_FILENAMES = {
 
 def render():
     st.header("Dashboard")
-    st.caption("SEC Philippines AFS intake, validation, and extraction overview for reviewer operations.")
+    st.caption("AFS intake, validation, and extraction overview for reviewer operations.")
 
     st.markdown(
         "<span class='badge' style='background:#d9f7e8;color:#0f6b43'>Live DB Data</span> "
@@ -68,7 +68,7 @@ def render():
                 "Submission Type": doc["submission_type"],
                 "Recommendation": rec or "—",
                 "Source": source,
-                "Uploaded At": (doc.get("uploaded_at") or "")[:16],
+                "Uploaded At": format_timestamp_pst(doc.get("uploaded_at") or ""),
             })
         display_df = pd.DataFrame(rows)
 
@@ -131,7 +131,7 @@ def render():
         if validations:
             df = pd.DataFrame(validations)
             df["Status"] = df["status"].map(status_badge)
-            st.bar_chart(df.set_index("status")["count"])
+            st.bar_chart(df.set_index("status")["count"], color="#0f5b3f")
             st.markdown(" ".join(df["Status"].tolist()), unsafe_allow_html=True)
         else:
             st.info("No validation results yet.")

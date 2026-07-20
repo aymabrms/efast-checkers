@@ -2,7 +2,7 @@ from pathlib import Path
 
 APP_TITLE = "SEC eFAST Checkers"
 APP_SUBTITLE = "AFS Validation and Figure Extraction MVP"
-AGENCY_NAME = "Securities and Exchange Commission Philippines"
+AGENCY_NAME = "Securities and Exchange Commission"
 DEFAULT_COMPANY = "Audentia Fortuna Holdings, Inc."
 DEFAULT_REPORT_TYPE = "AFS"
 DEFAULT_SUBMISSION_TYPE = "Annual Financial Statements"
