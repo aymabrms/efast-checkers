@@ -177,8 +177,8 @@ def render():
     else:
         for action in actions:
             rec = action.get("final_recommendation") or "—"
-            revert = action.get("revert_reason") or ""
-            notes = action.get("remarks") or ""
+            revert = action.get("final_revert_reason") or ""
+            notes = action.get("reviewer_remarks") or ""
             ts = action.get("updated_at") or action.get("created_at") or "—"
             rec_colors = {
                 "Accept": ("#d9f7e8", "#0f6b43"),

@@ -1,0 +1,70 @@
+Please do a final brown bag readiness pass on my current SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT add new features
+- Do NOT redesign the app
+- Do NOT refactor working modules
+- Do NOT change imports/navigation unless needed for a bug fix
+- Focus only on smoke-testing the current prototype and fixing small issues that could hurt a live demo
+- Keep all current July improvements intact
+
+Goal:
+Make the app stable and presentation-ready for a July brown bag session.
+
+Please inspect and test these exact flows:
+
+1. Dashboard
+- confirm all 3 seeded demo documents display correctly
+- confirm recommendation/source labels render correctly
+- confirm Open in Review works for each document
+- confirm no broken badges, empty cells, or mislabeled columns
+
+2. Document Review
+- confirm the Currently Reviewing banner shows the correct document
+- confirm page accordions open correctly
+- confirm validation cards render correctly
+- confirm reviewer disposition can be saved
+- confirm reviewer action history updates correctly
+- confirm switch document logic works without stale document confusion
+
+3. Figures Review
+- confirm the correct active document is shown
+- confirm confidence display is stable and readable
+- confirm revenue and hero metrics never show broken values like NaN
+- confirm Save Corrections works
+- confirm Export works
+- confirm Needs Review rows stay visible and readable
+
+4. Cross-page state
+- confirm Dashboard -> Document Review -> Figures Review preserves the active document properly
+- confirm returning to Dashboard does not break state
+- confirm no stale active_document_id problems remain
+
+5. Empty and edge states
+- confirm pages show clean messages when no document is selected
+- confirm fallback/demo warnings are visible but not excessive
+- confirm no raw tracebacks or obvious UI glitches appear
+
+If you find small issues, fix only those issues.
+Examples of acceptable fixes:
+- broken labels
+- stale active document bugs
+- empty-state wording
+- formatting bugs
+- export bugs
+- save/update issues
+- small visual inconsistencies
+
+Do NOT implement:
+- computed confidence
+- DB-backed historical/rankings
+- OCR
+- authentication
+- new schema redesign
+
+Output I want:
+1. Smoke test results by page
+2. Any bugs found
+3. Exact files changed
+4. Confirmation of what was fixed
+5. Confirmation that the prototype is stable for the July brown bag
