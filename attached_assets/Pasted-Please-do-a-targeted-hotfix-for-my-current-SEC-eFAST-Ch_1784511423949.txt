@@ -1,0 +1,74 @@
+Please do a targeted hotfix for my current SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT continue with any new feature work
+- Do NOT redesign the app
+- Do NOT undo Prompt 2, Prompt 3, or Prompt 4 improvements unless absolutely necessary
+- Focus only on fixing the current import/navigation error and restoring a running app
+- Inspect the current code first before changing anything
+
+Current error:
+ImportError: cannot import name 'document_review' from 'pages' (/home/runner/workspace/pages/__init__.py)
+
+Observed traceback:
+app.py is trying to do something like:
+from pages import dashboard, document_review, figures_review, historical_company, rankings, settings_demo_data, upload_intake
+
+Goal:
+Restore the app to a working state while preserving the recent changes from:
+- honest simulated-feature labels
+- 3 seeded demo documents
+- reviewer-flow improvements
+- "Open in Review"
+- reviewing banner
+- reviewer action history
+- _nav_to navigation logic if possible
+
+Please do these steps in order:
+
+1. Inspect the current pages folder and app.py
+- Check the exact filenames under /pages
+- Check whether pages/__init__.py exists and what it contains
+- Confirm whether the page files are named exactly:
+  - dashboard.py
+  - document_review.py
+  - figures_review.py
+  - historical_company.py
+  - rankings.py
+  - settings_demo_data.py
+  - upload_intake.py
+
+2. Fix the import error safely
+- If app.py is importing page modules using `from pages import ...`, replace that with a safer explicit import pattern such as:
+  - `import pages.dashboard as dashboard`
+  - `import pages.document_review as document_review`
+  - etc.
+- If needed, use importlib as a fallback
+- Do NOT rely on pages/__init__.py exporting the page modules unless you intentionally repair that file
+- Prefer the smallest, safest fix
+
+3. Check for any broken references caused by the navigation changes
+- Make sure `_nav_to` logic in app.py still works
+- Make sure Dashboard, Document Review, and Figures Review can still load
+- Make sure the seeded demo documents remain available
+- Make sure the reviewer-flow improvements from Prompt 4 are preserved if possible
+
+4. Validate page registration
+- Confirm that custom navigation and/or Streamlit page loading still works
+- If there is duplicated or conflicting navigation behavior, do the minimal fix needed to get the app running again
+- Do NOT do a full sidebar cleanup yet unless required for the hotfix
+
+5. After fixing, run the app and verify:
+- app loads without import error
+- Dashboard opens
+- Open in Review works
+- Document Review opens
+- Figures Review opens
+- Seeded demo documents are still present
+
+Output I want:
+1. Root cause of the import error
+2. Exact files changed
+3. Exact import/navigation fix applied
+4. Whether any Prompt 2–4 work had to be adjusted
+5. Confirmation that the app runs again

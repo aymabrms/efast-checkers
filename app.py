@@ -2,7 +2,13 @@ import streamlit as st
 
 from config import AGENCY_NAME, APP_SUBTITLE, APP_TITLE
 from db import init_db
-from pages import dashboard, document_review, figures_review, historical_company, rankings, settings_demo_data, upload_intake
+import pages.dashboard as dashboard
+import pages.document_review as document_review
+import pages.figures_review as figures_review
+import pages.historical_company as historical_company
+import pages.rankings as rankings
+import pages.settings_demo_data as settings_demo_data
+import pages.upload_intake as upload_intake
 from storage import ensure_all_demo_documents, seed_company_master
 
 PAGES = {
