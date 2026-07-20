@@ -1,0 +1,128 @@
+Please do a final presentation-polish pass focused only on these 3 hero pages of my current SEC eFAST Checkers prototype:
+
+1. Dashboard
+2. Document Review
+3. AFS Figures Extraction Review
+
+Important:
+- Do NOT redesign the whole app
+- Do NOT touch import logic in app.py unless absolutely necessary
+- Do NOT touch pages/__init__.py
+- Do NOT change seeded demo document logic in storage.py or demo_data.json
+- Do NOT work on Historical Company View or Rankings / Research View beyond preserving existing disclaimer labels
+- Keep the current SEC Philippines wording, eFAST-inspired green theme, and current navigation behavior
+- This is a polish pass only, not a refactor
+
+Current stable context:
+- import/navigation hotfix is already resolved
+- Prompt 2, 3, and 4 improvements are already in place
+- seeded demo documents and reviewer-flow improvements must remain intact
+
+Goal:
+Make the July brown bag demo as polished and credible as possible by improving the 3 strongest pages only.
+
+Please implement only these scoped improvements:
+
+-----------------------------------
+1. DASHBOARD POLISH
+-----------------------------------
+
+Improve the Dashboard presentation quality without changing its core behavior.
+
+Tasks:
+- Make the document queue more presentation-friendly
+- Replace raw technical-looking column labels with clean user-facing labels:
+  - sec_registration_no -> SEC Registration No.
+  - period_covered_year -> Period Covered Year
+  - submission_type -> Submission Type
+  - uploaded_at -> Uploaded At
+- Add clear status/recommendation badges if easy, using the seeded 3 demo documents
+- If possible, visually distinguish:
+  - Accept
+  - Needs Review
+  - Revert
+- Keep the “Open in Review” flow working
+- Keep the existing Live DB Data label if already added
+- If easy, add one compact label or badge showing whether a document is demo-seeded or uploaded
+
+Do not rebuild the dashboard logic.
+
+-----------------------------------
+2. DOCUMENT REVIEW POLISH
+-----------------------------------
+
+This is one of the strongest pages. Improve readability and presentation only.
+
+Tasks:
+- Keep the “Currently Reviewing” banner
+- Make the top summary section feel cleaner and easier to scan
+- Ensure the validation table is easy to read and visually consistent
+- If possible, make Passed / Warning / Failed more visually polished
+- Keep highlighted text evidence readable and uncluttered
+- Keep the page accordions consistent in spacing and layout
+- Make the reviewer disposition section look more intentional and presentation-ready
+- Keep the reviewer action history panel, but make sure it does not visually overpower the main review content
+- Preserve current functionality and current logic
+
+If easy:
+- add a small “Primary Source” / “Supporting Source” style tag for key pages like Auditor’s Report, Management Responsibility, Notes page 1
+But only if this can be done cleanly and quickly.
+
+-----------------------------------
+3. AFS FIGURES EXTRACTION REVIEW POLISH
+-----------------------------------
+
+This is the hero proof-of-concept page. Prioritize this page most.
+
+Tasks:
+- Keep the existing extracted figures review workflow intact
+- Make the table easier to scan visually
+- Keep “Estimated Confidence” clearly labeled as estimated/demo if still simulated
+- Format confidence values consistently for presentation
+  - for example: 0.91 -> 91% or 91% · Estimated
+- Prevent awkward formatting, truncation, or empty-state issues
+- Ensure key metrics at the top never show broken values like ₱nan
+- Keep Save Corrections and Export actions visible and clean
+- Make the table feel stable, trustworthy, and reviewer-oriented
+
+If easy:
+- lightly highlight rows by review state or confidence state
+- make “Needs Review” rows easier to spot
+But do not overcomplicate the styling.
+
+-----------------------------------
+4. VISUAL CONSISTENCY
+-----------------------------------
+
+Apply only small consistency fixes across the 3 pages:
+- Prefer green/eFAST-aligned chart colors over default blue if easy
+- Keep spacing, card styling, and headings consistent
+- Avoid overcrowding
+- Do not add flashy design
+- Maintain an internal government-tool feel
+
+-----------------------------------
+5. PRESERVE STABILITY
+-----------------------------------
+
+Very important:
+- Do not modify working imports unless required
+- Do not break the seeded demo documents
+- Do not break Open in Review
+- Do not break current reviewing banner
+- Do not break reviewer action history
+- Do not change navigation structure
+- Do not refactor modules outside the 3 target pages unless absolutely needed for a tiny helper/style improvement
+
+-----------------------------------
+OUTPUT I WANT
+-----------------------------------
+
+After implementing only this scope, stop and summarize:
+
+1. What polish was added to Dashboard
+2. What polish was added to Document Review
+3. What polish was added to Figures Review
+4. Exact files changed
+5. Any assumptions made
+6. Confirmation that the app still runs

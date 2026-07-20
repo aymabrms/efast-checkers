@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import streamlit as st
 
@@ -6,6 +8,17 @@ from storage import get_document, get_documents, get_figures
 from ui_helpers import dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
 
 REVENUE_LABELS = {"gross_revenue", "total_revenue", "revenue"}
+
+
+def _safe_conf_display(val) -> str:
+    """Format a 0–1 confidence float as '91% · Est.' or '—' if missing."""
+    try:
+        v = float(val)
+        if math.isnan(v):
+            return "—"
+        return f"{v * 100:.0f}% · Est."
+    except (TypeError, ValueError):
+        return "—"
 
 
 def render():
@@ -42,7 +55,7 @@ def render():
 
     if st.session_state.get("last_fallback_doc_id") == document_id:
         st.warning(
-            "⚠️ **Prototype Fallback Data Applied** — The figures below were not extracted from the uploaded PDF. "
+            "Prototype Fallback Data Applied — The figures below were not extracted from the uploaded PDF. "
             "Demo data was substituted because extraction did not produce results. "
             "Review and correct values as needed before treating them as authoritative."
         )
@@ -54,13 +67,17 @@ def render():
 
     df = pd.DataFrame(figures)
 
-    rev_values = df[df["normalized_label"].isin(REVENUE_LABELS)]["normalized_peso_value"].dropna()
-    rev_display = format_peso(rev_values.max()) if not rev_values.empty else "No detected revenue"
+    # Guard NaN in revenue display
+    rev_raw = df[df["normalized_label"].isin(REVENUE_LABELS)]["normalized_peso_value"].dropna()
+    rev_raw = rev_raw[rev_raw.apply(lambda x: not math.isnan(float(x)) if x is not None else False)]
+    rev_display = format_peso(rev_raw.max()) if not rev_raw.empty else "No detected revenue"
 
-    fiscal_years = sorted(df["fiscal_year"].unique(), reverse=True)
-    fiscal_years_display = ", ".join(str(x) for x in fiscal_years) if len(fiscal_years) > 0 else "—"
+    fiscal_years = sorted(df["fiscal_year"].dropna().unique(), reverse=True)
+    fiscal_years_display = ", ".join(str(int(y)) for y in fiscal_years) if fiscal_years else "—"
 
-    hero_cols = st.columns(4)
+    needs_review_count = int((df["review_status"] == "Needs Review").sum())
+
+    hero_cols = st.columns(5)
     with hero_cols[0]:
         metric_card("Rows Extracted", len(df), "Ready for reviewer validation")
     with hero_cols[1]:
@@ -69,41 +86,91 @@ def render():
         metric_card("Fiscal Years", fiscal_years_display, "Current and comparative")
     with hero_cols[3]:
         metric_card("Current Revenue", rev_display, "Normalized peso value")
+    with hero_cols[4]:
+        metric_card("Needs Review", needs_review_count, "Rows pending reviewer action")
 
     st.subheader(f"Extracted Figures Review Table — {document['company_name']}")
-    review_cols = ["id", "page_number", "statement_type", "raw_label", "normalized_label", "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis", "source_snippet", "confidence", "review_status", "reviewer_edited", "reviewed_value"]
+    st.caption(
+        "Confidence values are rule-based estimates from the prototype extraction engine — not ML model scores. "
+        "Review and correct as needed before treating figures as authoritative."
+    )
+
+    # Build editable view — sort Needs Review rows to the top for easy scanning
+    review_cols = [
+        "id", "page_number", "statement_type", "raw_label", "normalized_label",
+        "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis",
+        "source_snippet", "confidence", "review_status", "reviewer_edited", "reviewed_value",
+    ]
     editable = df[review_cols].copy()
     editable["reviewed_value"] = editable["reviewed_value"].fillna("")
+
+    # Add human-readable confidence display column
+    editable["conf_display"] = editable["confidence"].apply(_safe_conf_display)
+
+    # Sort: Needs Review first, then by page_number
+    sort_key = editable["review_status"].apply(lambda s: 0 if s == "Needs Review" else 1)
+    editable = editable.assign(_sort=sort_key).sort_values(["_sort", "page_number"]).drop(columns=["_sort"])
+
+    # Columns shown to reviewer (conf_display replaces raw confidence)
+    display_cols = [
+        "id", "page_number", "statement_type", "raw_label", "normalized_label",
+        "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis",
+        "source_snippet", "conf_display", "review_status", "reviewer_edited", "reviewed_value",
+    ]
+    editable_view = editable[display_cols].copy()
+
     edited = st.data_editor(
-        editable,
+        editable_view,
         width="stretch",
         hide_index=True,
         column_config={
-            "id": st.column_config.NumberColumn("ID", disabled=True),
-            "page_number": st.column_config.NumberColumn("Page", disabled=True),
+            "id": st.column_config.NumberColumn("ID", disabled=True, width="small"),
+            "page_number": st.column_config.NumberColumn("Page", disabled=True, width="small"),
             "statement_type": st.column_config.TextColumn("Statement Type", disabled=True),
             "raw_label": st.column_config.TextColumn("Raw Label", disabled=True),
             "normalized_label": st.column_config.TextColumn("Normalized Label", disabled=True),
-            "fiscal_year": st.column_config.NumberColumn("Fiscal Year", disabled=True),
+            "fiscal_year": st.column_config.NumberColumn("Fiscal Year", disabled=True, width="small"),
             "displayed_value": st.column_config.TextColumn("Displayed Value", disabled=True),
-            "normalized_peso_value": st.column_config.NumberColumn("Normalized Peso Value", disabled=True, format="₱%.0f"),
-            "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True),
+            "normalized_peso_value": st.column_config.NumberColumn(
+                "Normalized (₱)", disabled=True, format="₱%.0f"
+            ),
+            "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True, width="small"),
             "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
-            "confidence": st.column_config.NumberColumn("Estimated Confidence", disabled=True, format="%.2f", min_value=0.0, max_value=1.0),
-            "review_status": st.column_config.SelectboxColumn("Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]),
-            "reviewer_edited": st.column_config.CheckboxColumn("Reviewer Edited?", disabled=True),
+            "conf_display": st.column_config.TextColumn("Confidence (Est.)", disabled=True, width="medium"),
+            "review_status": st.column_config.SelectboxColumn(
+                "Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]
+            ),
+            "reviewer_edited": st.column_config.CheckboxColumn("Edited?", disabled=True, width="small"),
             "reviewed_value": st.column_config.TextColumn("Reviewed Value"),
         },
     )
+
     col1, col2 = st.columns([1, 4])
     with col1:
         if st.button("Save Corrections", type="primary"):
-            update_figure_reviews(document_id, edited.to_dict("records"))
+            # Map edits back using the original df index via id column
+            records = edited.rename(columns={"conf_display": "confidence"}).to_dict("records")
+            # Restore raw confidence from original df for DB writes
+            conf_map = dict(zip(df["id"], df["confidence"]))
+            for r in records:
+                r["confidence"] = conf_map.get(r["id"], r.get("confidence"))
+            update_figure_reviews(document_id, records)
             st.success("Figure review updates saved.")
     with col2:
         export_df = edited.drop(columns=["id"], errors="ignore")
         dataframe_download(export_df, f"sec_efast_figures_document_{document_id}.csv", "Export Figures CSV")
 
     st.subheader("Normalized Figure Buckets")
-    bucket = df.groupby("normalized_label", as_index=False)["normalized_peso_value"].sum().sort_values("normalized_peso_value", ascending=False)
-    st.dataframe(bucket, width="stretch", hide_index=True)
+    bucket = (
+        df.groupby("normalized_label", as_index=False)["normalized_peso_value"]
+        .sum()
+        .sort_values("normalized_peso_value", ascending=False)
+    )
+    st.dataframe(
+        bucket.rename(columns={"normalized_label": "Field", "normalized_peso_value": "Total (₱)"}),
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "Total (₱)": st.column_config.NumberColumn("Total (₱)", format="₱%.0f"),
+        },
+    )

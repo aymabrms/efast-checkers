@@ -17,6 +17,16 @@ def status_badge(status: str) -> str:
     return f"<span class='badge' style='background:{bg};color:{fg}'>{status}</span>"
 
 
+def recommendation_badge(rec: str) -> str:
+    colors = {
+        "Accept": ("#d9f7e8", "#0f6b43"),
+        "Revert": ("#fde8e8", "#b91c1c"),
+        "Needs Review": ("#e8eef7", "#1a3a6b"),
+    }
+    bg, fg = colors.get(rec, ("#f5f5f5", "#555"))
+    return f"<span class='badge' style='background:{bg};color:{fg};font-size:.78rem;padding:.2rem .55rem;'>{rec}</span>"
+
+
 def metric_card(label: str, value, caption: str = "") -> None:
     st.markdown(
         f"""
@@ -33,6 +43,8 @@ def metric_card(label: str, value, caption: str = "") -> None:
 def format_peso(value) -> str:
     try:
         v = float(value)
+        if v != v:  # NaN check
+            return "₱—"
         if abs(v) >= 1_000_000_000:
             return f"₱{v/1_000_000_000:.2f}B"
         if abs(v) >= 1_000_000:
