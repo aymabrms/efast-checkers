@@ -15,6 +15,8 @@ PAGES = {
     "Settings / Editable Demo Data": settings_demo_data.render,
 }
 
+PAGE_NAMES = list(PAGES.keys())
+
 
 def apply_styles():
     st.markdown(
@@ -65,12 +67,30 @@ def main():
     )
     st.sidebar.title(APP_TITLE)
     st.sidebar.caption("Philippine AFS QA dashboard prototype")
-    page = st.sidebar.radio("Navigation", list(PAGES.keys()))
+
+    # Support programmatic navigation (e.g. "Open in Review" from Dashboard)
+    nav_to = st.session_state.pop("_nav_to", None)
+    default_index = PAGE_NAMES.index(nav_to) if nav_to and nav_to in PAGE_NAMES else 0
+    # If we navigated programmatically, keep the radio in sync by storing the selection
+    if "_current_page" not in st.session_state:
+        st.session_state["_current_page"] = PAGE_NAMES[default_index]
+    if nav_to:
+        st.session_state["_current_page"] = nav_to
+
+    page = st.sidebar.radio(
+        "Navigation",
+        PAGE_NAMES,
+        index=PAGE_NAMES.index(st.session_state["_current_page"]),
+        key="nav_radio",
+    )
+    st.session_state["_current_page"] = page
+
     st.sidebar.divider()
     st.sidebar.caption("Demo documents")
     st.sidebar.write("Audentia Fortuna Holdings, Inc.")
     st.sidebar.write("Malaya Northstar Manufacturing Corp.")
     st.sidebar.write("Haraya Logistics and Trade, Inc.")
+
     PAGES[page]()
 
 

@@ -43,6 +43,26 @@ def render():
     if documents:
         df = pd.DataFrame(documents)[["id", "filename", "company_name", "sec_registration_no", "period_covered_year", "submission_type", "uploaded_at"]]
         st.dataframe(df, width="stretch", hide_index=True)
+
+        st.markdown("**Open a document for review:**")
+        doc_labels = {
+            f"#{doc['id']} — {doc['company_name']} — {doc['period_covered_year']}": doc
+            for doc in documents
+        }
+        col_sel, col_btn = st.columns([4, 1])
+        with col_sel:
+            chosen_label = st.selectbox(
+                "Select document",
+                list(doc_labels.keys()),
+                label_visibility="collapsed",
+                key="dashboard_doc_pick",
+            )
+        with col_btn:
+            if st.button("Open in Review →", type="primary", use_container_width=True):
+                chosen_doc = doc_labels[chosen_label]
+                st.session_state["active_document_id"] = chosen_doc["id"]
+                st.session_state["_nav_to"] = "Document Review"
+                st.rerun()
     else:
         st.info("The queue is empty. Load the demo document or upload a readable PDF.")
 

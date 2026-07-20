@@ -3,7 +3,7 @@ import streamlit as st
 
 from db import update_figure_reviews
 from storage import get_document, get_documents, get_figures
-from ui_helpers import dataframe_download, format_peso, metric_card, show_document_selector
+from ui_helpers import dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
 
 REVENUE_LABELS = {"gross_revenue", "total_revenue", "revenue"}
 
@@ -12,10 +12,33 @@ def render():
     st.header("AFS Figures Extraction Review")
     st.caption("Hero workflow for structured extraction, reviewer correction, and database-ready AFS financial figures.")
 
-    document_id = st.session_state.get("active_document_id") or show_document_selector(get_documents(), "figures_doc_selector")
-    if not document_id:
+    documents = get_documents()
+
+    # Resolve active document — prefer session state, fall back to selector
+    active_id = st.session_state.get("active_document_id")
+    if not active_id:
+        active_id = show_document_selector(documents, "figures_doc_selector")
+        if not active_id:
+            return
+        st.session_state["active_document_id"] = active_id
+    else:
+        with st.expander("Switch document", expanded=False):
+            switched_id = show_document_selector(documents, "figures_doc_switcher")
+            if switched_id and switched_id != active_id:
+                if st.button("Load selected document", key="figures_switch_btn"):
+                    st.session_state["active_document_id"] = switched_id
+                    st.rerun()
+
+    document_id = st.session_state["active_document_id"]
+    document = get_document(document_id)
+
+    if not document:
+        st.warning("Selected document was not found. Please choose another document.")
+        st.session_state.pop("active_document_id", None)
         return
-    st.session_state["active_document_id"] = document_id
+
+    # ── Persistent "Currently Reviewing" banner ──────────────────────────────
+    reviewing_banner(document)
 
     if st.session_state.get("last_fallback_doc_id") == document_id:
         st.warning(
@@ -24,7 +47,6 @@ def render():
             "Review and correct values as needed before treating them as authoritative."
         )
 
-    document = get_document(document_id)
     figures = get_figures(document_id)
     if not figures:
         st.info("No extracted figures are available for this document yet.")

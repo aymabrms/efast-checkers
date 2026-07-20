@@ -1,0 +1,59 @@
+Please do a focused reviewer-flow polish pass on my SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT redesign the whole app
+- Keep the current visual direction and layout
+- Focus only on reviewer usability for the July brown bag demo
+- Inspect the current Dashboard, Document Review, and cross-page state behavior first
+
+Goal:
+Make the reviewer workflow look cleaner, more realistic, and easier to demo.
+
+Please implement these exact improvements:
+
+1. Add “Open in Review” from Dashboard
+- In the Dashboard document queue, add a clear action to open the selected document directly in Document Review
+- When clicked, it should set the active document reliably and navigate or guide the user clearly
+
+2. Add a persistent “Currently Reviewing” indicator
+- Across Document Review and Figures Review, show a visible banner/card with:
+  - company name
+  - SEC registration number
+  - filing year / period covered
+  - report type
+- This should persist while navigating between reviewer pages
+- It should reduce confusion about which document is active
+
+3. Add reviewer action history panel
+- On Document Review, show the latest saved reviewer action(s) in a compact panel
+- Include:
+  - recommendation
+  - suggested revert reason
+  - reviewer remarks
+  - timestamp
+- Keep it simple and readable
+
+4. Improve active document state handling
+- Prevent stale active_document_id behavior across pages where possible
+- The selected document should remain stable unless the user intentionally changes it
+
+5. Add gentle progress/state clarity
+- If analysis is running, show a progress or working indicator
+- If demo fallback was used, keep that visible but not too intrusive
+- If no document is selected, show a clean empty-state message
+
+6. Keep the reviewer disposition section polished
+- Do not redesign it heavily
+- Just make sure it works cleanly and looks consistent with the rest of the reviewer flow
+
+Constraints:
+- No heavy refactor
+- No authentication
+- No new major dependencies
+- Keep the current navigation and green styling unless required for this flow
+
+Output I want:
+1. Which reviewer-flow improvements were added
+2. Which files changed
+3. How active document handling was improved
+4. Any assumptions you made
