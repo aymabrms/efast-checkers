@@ -1,0 +1,90 @@
+Please perform a targeted database cleanup in my current SEC eFAST Checkers prototype.
+
+Important:
+- Do NOT redesign the app
+- Do NOT change any UI
+- Do NOT modify the 3 seeded demo documents
+- Do NOT change the demo seeding logic unless necessary to prevent this exact accidental upload from returning
+- Do NOT delete records based only on company name
+- Make a backup copy of the SQLite database before deleting anything
+
+Problem:
+I accidentally loaded Audentia Fortuna Holdings, Inc. again through Upload / Intake.
+
+The Dashboard now shows 4 documents instead of the intended 3 demo documents.
+
+The records visible in the prototype are:
+
+Valid seeded demo records:
+- Document ID 1 — Audentia Fortuna Holdings, Inc. — 2025 — Source: Demo
+- Document ID 2 — Malaya Northstar Manufacturing Corp. — 2025 — Source: Demo
+- Document ID 3 — Haraya Logistics and Trade, Inc. — 2025 — intended seeded demo record
+
+Accidental extra record:
+- Document ID 4 — Audentia Fortuna Holdings, Inc. — 2025
+- Source shown as Uploaded
+- SEC Registration Number appears blank
+- Recommendation appears blank
+- Uploaded At is 21 Jul 2026, 2:54 AM PST
+
+Goal:
+Delete only the accidental Document ID 4 and all of its dependent analysis records, while keeping Documents 1, 2, and 3 completely unchanged.
+
+Please do these steps:
+
+1. Inspect the SQLite database
+- Confirm that Document ID 4 matches the accidental uploaded Audentia record
+- Confirm that Document ID 1 is the valid seeded Audentia demo record
+- Do not proceed if these identities do not match
+
+2. Back up the database
+- Create a backup copy before deletion
+- Use a clear filename such as:
+  app_database_before_duplicate_cleanup.sqlite
+
+3. Delete related child records for Document ID 4
+Check and remove rows linked through document_id from tables such as:
+- page_analysis
+- validations
+- extracted_figures
+- reviewer_actions
+- any other table with a foreign key or document_id reference
+
+4. Delete Document ID 4 from the documents table
+
+5. Uploaded file cleanup
+- Check whether Document ID 4 has a corresponding uploaded PDF in the uploads folder
+- Delete only that specific accidental file if it is no longer referenced by another document
+- Do not delete any seeded or shared demo file
+
+6. Use a transaction
+- Perform the database cleanup inside one transaction
+- Roll back if any step fails
+
+7. Verify after cleanup
+Confirm that:
+- documents table contains only 3 records
+- IDs 1, 2, and 3 remain
+- ID 4 is gone
+- Dashboard shows Uploaded Documents = 3
+- Dashboard recommendations still show:
+  - Malaya Northstar = Accept
+  - Haraya Logistics = Revert
+  - Audentia seeded demo remains available
+- Document Review selector lists only the intended 3 documents
+- Figures Review still works for the seeded documents
+- reviewer corrections and seeded analysis data remain intact
+
+8. Do not reset or reseed the entire database
+- Do not delete the SQLite file
+- Do not recreate all demo documents
+- Do not call a destructive reset function
+- This must be a surgical removal of Document ID 4 only
+
+After completing the cleanup, stop and report:
+1. Database file backed up
+2. Rows deleted per table
+3. Uploaded file deleted, if any
+4. Remaining document IDs
+5. Confirmation that the app now shows exactly 3 demo documents
+6. Exact files changed, if any
