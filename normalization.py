@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from config import LABEL_MAPPING_PATH
 
@@ -24,13 +24,33 @@ def normalize_label(raw_label: str, mapping: Optional[Dict[str, List[str]]] = No
     return clean_label(raw_label).replace(" ", "_")
 
 
-def parse_amount(displayed_value: str, unit_basis: str = "Pesos") -> float:
+_SAFE_NUMERIC_PATTERN = re.compile(
+    r"^\s*(?:"
+    r"-?(?:₱\s*)?(?:(?:\d+)|(?:\d{1,3}(?:,\d{3})+))(?:\.\d+)?"
+    r"|"
+    r"\(\s*(?:₱\s*)?(?:(?:\d+)|(?:\d{1,3}(?:,\d{3})+))(?:\.\d+)?\s*\)"
+    r")\s*$"
+)
+
+
+def validate_numeric_string(value: str) -> Tuple[bool, str]:
+    """Return whether a recognized financial value is safe to normalize."""
+    text = str(value or "").strip()
+    if not text or not _SAFE_NUMERIC_PATTERN.fullmatch(text):
+        return False, "Ambiguous numeric formatting detected."
+    return True, ""
+
+
+def parse_amount(displayed_value: str, unit_basis: str = "Pesos") -> Optional[float]:
+    safe, _ = validate_numeric_string(displayed_value)
+    if not safe:
+        return None
     text = str(displayed_value).replace("₱", "").replace(",", "").strip()
     negative = "(" in text and ")" in text
     text = text.replace("(", "").replace(")", "")
     match = re.search(r"-?\d+(?:\.\d+)?", text)
     if not match:
-        return 0.0
+        return None
     amount = float(match.group(0))
     if negative:
         amount = -amount

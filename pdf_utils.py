@@ -14,6 +14,27 @@ def quality_flag(text: str) -> str:
     return "Passed"
 
 
+def normalize_rotation(rotation) -> int:
+    try:
+        value = int(rotation or 0) % 360
+    except (TypeError, ValueError):
+        return 0
+    return value if value in (0, 90, 180, 270) else 0
+
+
+def quality_label(text_length: int, flag: str = "") -> str:
+    """Return a reviewer-facing preliminary text quality signal."""
+    try:
+        length = int(text_length or 0)
+    except (TypeError, ValueError):
+        length = 0
+    if flag == "Failed" or length < 25:
+        return "Poor Readability"
+    if flag == "Warning" or length < 140:
+        return "Low Text / Possible Scan"
+    return "Readable"
+
+
 def extract_pdf_pages(file_path: Path) -> Tuple[List[Dict], List[str]]:
     """
     Extract pages from a PDF file.
@@ -37,6 +58,8 @@ def extract_pdf_pages(file_path: Path) -> Tuple[List[Dict], List[str]]:
                 "text": text,
                 "text_preview": text[:TEXT_PREVIEW_MAX_CHARS],
                 "orientation": orientation,
+                "rotation_degrees": normalize_rotation(getattr(page, "rotation", 0)),
+                "text_length": len(text.strip()),
                 "width": rect.width,
                 "height": rect.height,
             })
@@ -61,6 +84,8 @@ def extract_pdf_pages(file_path: Path) -> Tuple[List[Dict], List[str]]:
                     "text": text,
                     "text_preview": text[:TEXT_PREVIEW_MAX_CHARS],
                     "orientation": orientation,
+                    "rotation_degrees": normalize_rotation(getattr(page, "rotation", 0)),
+                    "text_length": len(text.strip()),
                     "width": page.width,
                     "height": page.height,
                 })

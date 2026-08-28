@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from db import save_reviewer_action
+from pdf_utils import quality_label
 from storage import get_document, get_documents, get_pages, get_reviewer_actions, get_validations, load_revert_reasons
 from ui_helpers import highlight_terms, render_status, reviewing_banner, show_document_selector, status_badge
 from validation_engine import final_recommendation, suggested_revert_reason
@@ -112,6 +113,10 @@ def render():
 
     # ── Page Review ───────────────────────────────────────────────────────────
     st.subheader("Page Review")
+    st.caption(
+        "Page Layout uses PDF geometry. Rotation Metadata is read from the PDF when available. "
+        "Image-content rotation that is not represented in PDF metadata is not automatically detected in this prototype."
+    )
     if not pages:
         st.info("No page analysis data is available for this document.")
     for page in pages:
@@ -122,16 +127,31 @@ def render():
             # Source tag rendered inside expander for clarity
             if source_tag:
                 st.markdown(source_tag, unsafe_allow_html=True)
-            cols = st.columns(4)
-            cols[0].write("Orientation")
-            cols[0].markdown(f"**{page['orientation']}**")
-            cols[1].write("Company Match")
-            cols[1].success("Matched") if page["detected_company_match"] else cols[1].warning("Review")
-            cols[2].write("Period Match")
-            cols[2].success("Matched") if page["detected_period_match"] else cols[2].warning("Review")
-            cols[3].write("Readability")
-            with cols[3]:
-                render_status(page["image_quality_flag"])
+            cols = st.columns(5)
+            cols[0].write("Page Layout")
+            cols[0].markdown(f"**{page.get('orientation') or 'Unknown'}**")
+            rotation = int(page.get("rotation_degrees") or 0)
+            cols[1].write("Rotation Metadata")
+            if rotation:
+                cols[1].warning(f"{rotation}° · Review")
+            else:
+                cols[1].success("0°")
+            cols[2].write("Company Match")
+            cols[2].success("Matched") if page["detected_company_match"] else cols[2].warning("Review")
+            cols[3].write("Period Match")
+            cols[3].success("Matched") if page["detected_period_match"] else cols[3].warning("Review")
+            cols[4].write("Quality Signal")
+            text_length = page.get("text_length")
+            if not text_length and page.get("text_preview"):
+                text_length = len(str(page.get("text_preview") or "").strip())
+            quality = quality_label(text_length, page.get("image_quality_flag"))
+            if quality == "Readable":
+                cols[4].success(quality)
+            elif quality == "Low Text / Possible Scan":
+                cols[4].warning(quality)
+            else:
+                cols[4].error(quality)
+            cols[4].caption(f"{int(text_length or 0):,} chars")
             terms = [document["company_name"], str(document["period_covered_year"]), document["sec_registration_no"]]
             st.markdown(
                 f"<div class='text-preview'>{highlight_terms(page['text_preview'], terms)}</div>",

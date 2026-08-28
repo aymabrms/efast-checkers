@@ -4,7 +4,7 @@ from config import DEFAULT_COMPARATIVE_YEARS, DEFAULT_COMPANY, DEFAULT_FILING_YE
 from db import insert_document, replace_document_analysis
 from extraction_engine import extract_figures_from_pages, fiscal_year_candidates
 from pdf_utils import extract_pdf_pages, prepare_uploaded_file
-from storage import ensure_demo_document, load_company_master, load_demo_data
+from storage import ensure_demo_document, load_company_master
 from validation_engine import analyze_pages, validate_document
 
 
@@ -27,8 +27,12 @@ def render():
         submitted = st.form_submit_button("Save Intake and Analyze")
 
     if submitted:
+        if not uploaded:
+            st.error("Upload a PDF to analyze, or choose Load Demo Document for the explicit demo workflow.")
+            return
+
         metadata = {
-            "filename": uploaded.name if uploaded else "manual_demo_fallback.pdf",
+            "filename": uploaded.name,
             "company_name": company_name,
             "sec_registration_no": sec_no,
             "report_type": report_type,
@@ -38,46 +42,66 @@ def render():
             "filing_year": int(filing_year),
         }
         document_id = insert_document(metadata)
-        raw_pages: list = []
-        used_fallback = False
-        if uploaded:
-            saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
-            raw_pages, extraction_errors = extract_pdf_pages(saved_path)
-            if extraction_errors:
-                for err in extraction_errors:
-                    st.warning(f"PDF parser issue: {err}")
+        saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
+        raw_pages, extraction_errors = extract_pdf_pages(saved_path)
+        if extraction_errors:
+            for err in extraction_errors:
+                st.warning(f"PDF parser issue: {err}")
         company_master = load_company_master()
         if raw_pages:
             pages = analyze_pages(raw_pages, metadata, company_master)
             validations = validate_document(pages, metadata, company_master)
             figures = extract_figures_from_pages(pages, fiscal_year_candidates(metadata))
-            if not figures:
-                figures = load_demo_data()["sample_figures"]
-                used_fallback = True
-                st.warning(
-                    "⚠️ **Prototype Fallback Data Applied** — Readable text was found in the PDF, "
-                    "but no figures matched the extraction pattern. Demo extraction rows have been "
-                    "loaded in place of real extracted values. Figures shown do not reflect this document."
+            low_text = any(page.get("image_quality_flag") in ("Warning", "Failed") for page in pages)
+            has_check_source = any(row.get("status") == "Check Source" for row in figures)
+            if low_text:
+                analysis_outcome = "Possible Scanned / Low-Text PDF"
+                outcome_message = (
+                    "Real PDF pages were analyzed, but one or more pages have low extracted text. "
+                    "This is a preliminary text-quality signal; image-content rotation not represented "
+                    "in PDF metadata is not automatically detected."
                 )
-        else:
-            demo = load_demo_data()
-            pages = analyze_pages(demo["sample_pages"], metadata, company_master)
-            validations = validate_document(pages, metadata, company_master)
-            figures = demo["sample_figures"]
-            used_fallback = True
-            if uploaded:
-                st.warning(
-                    "⚠️ **Prototype Fallback Data Applied** — PDF text extraction produced no pages. "
-                    "Demo fallback data has been loaded for reviewer simulation. "
-                    "Figures shown do not reflect the content of the uploaded document."
+                st.warning(f"**{analysis_outcome}** — {outcome_message}")
+            elif not figures or has_check_source:
+                analysis_outcome = "Real PDF Analysis Completed — Figures Need Review"
+                outcome_message = (
+                    "No supported financial figures were reliably extracted from this document."
+                    if not figures
+                    else "Ambiguous numeric formatting was detected in one or more figures; verify the original source."
                 )
+                st.warning(f"**{analysis_outcome}** — {outcome_message}")
             else:
-                st.warning("⚠️ **Prototype Fallback Data Applied** — No PDF was uploaded. Demo data has been loaded.")
-        replace_document_analysis(document_id, pages, validations, figures)
-        if used_fallback:
-            st.session_state["last_fallback_doc_id"] = document_id
+                analysis_outcome = "Real PDF Analysis Completed"
+                outcome_message = "Real PDF pages, validations, and supported figure extraction were completed."
+                st.success(f"**{analysis_outcome}** — {outcome_message}")
+            if not figures:
+                st.warning("No supported financial figures were reliably extracted from this document.")
+            elif has_check_source:
+                st.warning(
+                    "Some extracted values have ambiguous numeric formatting. Original raw values were retained; "
+                    "normalized peso values are blank until the reviewer verifies the source."
+                )
         else:
-            st.session_state.pop("last_fallback_doc_id", None)
+            pages = []
+            figures = []
+            analysis_outcome = "Extraction Failed — Manual Review Required"
+            outcome_message = (
+                "No page text could be extracted from the uploaded PDF. No demo pages or demo figures were inserted."
+            )
+            validations = []
+            st.error(f"**{analysis_outcome}** — {outcome_message}")
+
+        validations.append({
+            "rule_name": "PDF analysis outcome",
+            "status": "Passed" if analysis_outcome == "Real PDF Analysis Completed" else "Needs Review",
+            "message": f"{analysis_outcome}. {outcome_message}",
+            "suggested_revert_reason": (
+                "Poor image quality"
+                if analysis_outcome in ("Possible Scanned / Low-Text PDF", "Extraction Failed — Manual Review Required")
+                else ""
+            ),
+        })
+        replace_document_analysis(document_id, pages, validations, figures)
         st.session_state["active_document_id"] = document_id
         st.success(f"Document #{document_id} saved and analyzed.")
 

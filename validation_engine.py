@@ -68,6 +68,9 @@ def analyze_pages(raw_pages: List[Dict], metadata: Dict, company_master: Dict) -
         text = page.get("text") or page.get("text_preview") or ""
         page_type = page.get("page_type") or classify_page(text)
         flag = page.get("image_quality_flag") or quality_flag(text)
+        text_length = page.get("text_length")
+        if text_length is None:
+            text_length = len(text.strip())
         analyzed.append({
             "page_number": page.get("page_number"),
             "page_type": page_type,
@@ -76,6 +79,8 @@ def analyze_pages(raw_pages: List[Dict], metadata: Dict, company_master: Dict) -
             "detected_company_match": fuzzy_company_match(text, company_name),
             "detected_period_match": has_period(text, period_year),
             "image_quality_flag": flag,
+            "rotation_degrees": page.get("rotation_degrees", page.get("rotation", 0)) or 0,
+            "text_length": text_length,
         })
     return analyzed
 
@@ -113,6 +118,20 @@ def validate_document(pages: List[Dict], metadata: Dict, company_master: Dict) -
         "status": "Warning" if landscape_pages else "Passed",
         "message": f"{len(landscape_pages)} landscape page(s) detected; review if these are legitimate wide financial tables." if landscape_pages else "No landscape pages detected.",
         "suggested_revert_reason": "Wrong page orientation" if landscape_pages else "",
+    })
+    rotated_pages = [
+        page for page in pages
+        if int(page.get("rotation_degrees") or 0) in (90, 180, 270)
+    ]
+    validations.append({
+        "rule_name": "Rotation metadata review",
+        "status": "Warning" if rotated_pages else "Passed",
+        "message": (
+            f"Rotation metadata detected on {len(rotated_pages)} page(s); reviewer confirmation is required."
+            if rotated_pages
+            else "No non-zero PDF rotation metadata detected."
+        ),
+        "suggested_revert_reason": "",
     })
     missing = [section for section in REQUIRED_SECTIONS if section not in page_types]
     validations.append({

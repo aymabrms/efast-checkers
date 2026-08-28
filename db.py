@@ -46,7 +46,9 @@ def init_db() -> None:
         text_preview TEXT,
         detected_company_match INTEGER,
         detected_period_match INTEGER,
-        image_quality_flag TEXT
+        image_quality_flag TEXT,
+        rotation_degrees INTEGER DEFAULT 0,
+        text_length INTEGER DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS validations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,6 +84,11 @@ def init_db() -> None:
         updated_at TEXT
     );
     """)
+    page_columns = {row[1] for row in cur.execute("PRAGMA table_info(page_analysis)").fetchall()}
+    if "rotation_degrees" not in page_columns:
+        cur.execute("ALTER TABLE page_analysis ADD COLUMN rotation_degrees INTEGER DEFAULT 0")
+    if "text_length" not in page_columns:
+        cur.execute("ALTER TABLE page_analysis ADD COLUMN text_length INTEGER DEFAULT 0")
     conn.commit()
     conn.close()
 
@@ -125,10 +132,25 @@ def replace_document_analysis(document_id: int, pages: List[Dict], validations: 
     for page in pages:
         cur.execute(
             """
-            INSERT INTO page_analysis (document_id, page_number, page_type, orientation, text_preview, detected_company_match, detected_period_match, image_quality_flag)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO page_analysis (
+                document_id, page_number, page_type, orientation, text_preview,
+                detected_company_match, detected_period_match, image_quality_flag,
+                rotation_degrees, text_length
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (document_id, page.get("page_number"), page.get("page_type"), page.get("orientation"), page.get("text_preview"), int(bool(page.get("detected_company_match"))), int(bool(page.get("detected_period_match"))), page.get("image_quality_flag")),
+            (
+                document_id,
+                page.get("page_number"),
+                page.get("page_type"),
+                page.get("orientation"),
+                page.get("text_preview"),
+                int(bool(page.get("detected_company_match"))),
+                int(bool(page.get("detected_period_match"))),
+                page.get("image_quality_flag"),
+                page.get("rotation_degrees", page.get("rotation", 0)) or 0,
+                page.get("text_length", len(str(page.get("text_preview") or "").strip())),
+            ),
         )
     for item in validations:
         cur.execute(

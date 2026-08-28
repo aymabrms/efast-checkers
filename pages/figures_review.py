@@ -53,19 +53,19 @@ def render():
     # ── Persistent "Currently Reviewing" banner ──────────────────────────────
     reviewing_banner(document)
 
-    if st.session_state.get("last_fallback_doc_id") == document_id:
-        st.warning(
-            "Prototype Fallback Data Applied — The figures below were not extracted from the uploaded PDF. "
-            "Demo data was substituted because extraction did not produce results. "
-            "Review and correct values as needed before treating them as authoritative."
-        )
-
     figures = get_figures(document_id)
     if not figures:
-        st.info("No extracted figures are available for this document yet.")
+        st.warning("No supported financial figures were reliably extracted from this document.")
         return
 
     df = pd.DataFrame(figures)
+    check_source_count = int((df["review_status"] == "Check Source").sum())
+    if check_source_count:
+        st.warning(
+            f"{check_source_count} figure row(s) have **Check Source** status. "
+            "Ambiguous numeric formatting detected. Original raw values are retained and normalized peso values "
+            "remain blank until the reviewer verifies the source."
+        )
 
     # Guard NaN in revenue display
     rev_raw = df[df["normalized_label"].isin(REVENUE_LABELS)]["normalized_peso_value"].dropna()
@@ -75,7 +75,7 @@ def render():
     fiscal_years = sorted(df["fiscal_year"].dropna().unique(), reverse=True)
     fiscal_years_display = ", ".join(str(int(y)) for y in fiscal_years) if fiscal_years else "—"
 
-    needs_review_count = int((df["review_status"] == "Needs Review").sum())
+    needs_review_count = int(df["review_status"].isin(["Needs Review", "Check Source"]).sum())
 
     hero_cols = st.columns(5)
     with hero_cols[0]:
@@ -108,7 +108,7 @@ def render():
     editable["conf_display"] = editable["confidence"].apply(_safe_conf_display)
 
     # Sort: Needs Review first, then by page_number
-    sort_key = editable["review_status"].apply(lambda s: 0 if s == "Needs Review" else 1)
+    sort_key = editable["review_status"].apply(lambda s: 0 if s in ("Needs Review", "Check Source") else 1)
     editable = editable.assign(_sort=sort_key).sort_values(["_sort", "page_number"]).drop(columns=["_sort"])
 
     # Columns shown to reviewer (conf_display replaces raw confidence)
@@ -138,7 +138,7 @@ def render():
             "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
             "conf_display": st.column_config.TextColumn("Confidence (Est.)", disabled=True, width="medium"),
             "review_status": st.column_config.SelectboxColumn(
-                "Status", options=["Needs Review", "Reviewed", "Corrected", "Rejected"]
+                "Status", options=["Needs Review", "Check Source", "Reviewed", "Corrected", "Rejected"]
             ),
             "reviewer_edited": st.column_config.CheckboxColumn("Edited?", disabled=True, width="small"),
             "reviewed_value": st.column_config.TextColumn("Reviewed Value"),
@@ -161,16 +161,20 @@ def render():
         dataframe_download(export_df, f"sec_efast_figures_document_{document_id}.csv", "Export Figures CSV")
 
     st.subheader("Normalized Figure Buckets")
-    bucket = (
-        df.groupby("normalized_label", as_index=False)["normalized_peso_value"]
-        .sum()
-        .sort_values("normalized_peso_value", ascending=False)
-    )
-    st.dataframe(
-        bucket.rename(columns={"normalized_label": "Field", "normalized_peso_value": "Total (₱)"}),
-        width="stretch",
-        hide_index=True,
-        column_config={
-            "Total (₱)": st.column_config.NumberColumn("Total (₱)", format="₱%.0f"),
-        },
-    )
+    bucket_source = df.dropna(subset=["normalized_peso_value"])
+    if bucket_source.empty:
+        st.info("No safely normalized peso values are available for aggregation yet.")
+    else:
+        bucket = (
+            bucket_source.groupby("normalized_label", as_index=False)["normalized_peso_value"]
+            .sum()
+            .sort_values("normalized_peso_value", ascending=False)
+        )
+        st.dataframe(
+            bucket.rename(columns={"normalized_label": "Field", "normalized_peso_value": "Total (₱)"}),
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Total (₱)": st.column_config.NumberColumn("Total (₱)", format="₱%.0f"),
+            },
+        )

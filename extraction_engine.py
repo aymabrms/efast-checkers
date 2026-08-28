@@ -1,7 +1,7 @@
 import re
 from typing import Dict, List
 
-from normalization import detect_unit_basis, normalize_label, parse_amount
+from normalization import detect_unit_basis, normalize_label, parse_amount, validate_numeric_string
 
 MANDATORY_LABELS = [
     "Total Assets",
@@ -28,10 +28,12 @@ def extract_figures_from_pages(pages: List[Dict], fiscal_years: List[int]) -> Li
         unit_basis = detect_unit_basis(text)
         for label in MANDATORY_LABELS:
             for year in fiscal_years:
-                pattern = rf"({re.escape(label)})\s+{year}\s+([\(\)-]?[₱]?[0-9][0-9,]*(?:\.\d+)?\)?)"
+                pattern = rf"({re.escape(label)})\s+{year}\s+([^\s]+)"
                 match = re.search(pattern, text, re.IGNORECASE)
                 if match:
                     displayed = match.group(2)
+                    numeric_candidate = displayed.rstrip(".,;:")
+                    numeric_safe, numeric_note = validate_numeric_string(numeric_candidate)
                     results.append({
                         "page_number": page.get("page_number"),
                         "statement_type": page.get("page_type", "Other / Unclassified"),
@@ -39,10 +41,11 @@ def extract_figures_from_pages(pages: List[Dict], fiscal_years: List[int]) -> Li
                         "normalized_label": normalize_label(match.group(1)),
                         "fiscal_year": year,
                         "displayed_value": displayed,
-                        "normalized_peso_value": parse_amount(displayed, unit_basis),
+                        "normalized_peso_value": parse_amount(numeric_candidate, unit_basis) if numeric_safe else None,
                         "unit_basis": unit_basis,
                         "source_snippet": text[max(0, match.start() - 45):match.end() + 45],
-                        "status": "Needs Review",
+                        "status": "Needs Review" if numeric_safe else "Check Source",
+                        "review_note": numeric_note,
                         "confidence": 0.82,
                     })
     return results

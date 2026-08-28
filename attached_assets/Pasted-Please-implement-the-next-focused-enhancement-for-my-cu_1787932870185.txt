@@ -1,0 +1,256 @@
+Please implement the next focused enhancement for my current SEC eFAST Checkers prototype:
+
+REAL UPLOAD READINESS V1
+
+IMPORTANT:
+- Inspect the current code first
+- Do NOT redesign the UI
+- Do NOT implement full OCR yet
+- Do NOT implement machine learning
+- Do NOT modify Historical Company View or Rankings
+- Do NOT change the three seeded demo cases
+- Preserve all existing reviewer flows
+- Keep this enhancement small and safe
+- Stop after implementing only this scope
+
+OBJECTIVE
+
+Prepare the prototype for controlled testing with real AFS PDF uploads.
+
+The most important rule is:
+
+REAL UPLOADED DOCUMENTS MUST NEVER AUTOMATICALLY RECEIVE FICTIONAL DEMO PAGES OR DEMO FINANCIAL FIGURES.
+
+Demo data must only be used when the user explicitly chooses Demo Mode / Load Demo Document.
+
+--------------------------------------------------
+1. REMOVE DEMO FALLBACK FROM REAL PDF UPLOADS
+--------------------------------------------------
+
+Inspect pages/upload_intake.py and the current fallback logic.
+
+Current behavior can substitute:
+- sample demo pages when no pages are extracted
+- sample demo figures when no real figures are detected
+
+Change this behavior for user-uploaded PDFs.
+
+For a real uploaded PDF:
+
+A. If PDF text extraction succeeds:
+- analyze the real extracted pages
+- run real validation
+- run current real figure extraction
+
+B. If page extraction fails:
+- do NOT substitute demo pages
+- store/display a clear state such as:
+  "Extraction Failed — Manual Review Required"
+
+C. If pages are extracted but no financial figures are found:
+- preserve the real page analysis and validations
+- do NOT insert demo figures
+- show:
+  "No supported financial figures were reliably extracted from this document."
+
+D. Keep the existing Load Demo Document function working exactly as the explicit demo path.
+
+--------------------------------------------------
+2. ADD BASIC REAL-PAGE QUALITY DIAGNOSTICS
+--------------------------------------------------
+
+Do not implement OCR yet.
+
+Using the existing PDF/image tools already available where possible, add lightweight page diagnostics.
+
+For each real uploaded page, identify at minimum:
+
+- page orientation from PDF geometry
+- PDF rotation metadata if available
+- extracted text length
+- whether the page has little or no usable text
+
+Use simple reviewer-friendly outputs such as:
+
+Readable
+Low Text / Possible Scan
+Poor Readability
+Rotation Detected
+Landscape
+Needs Review
+
+Do not claim that this is full image-quality AI.
+
+Rename or describe the current readability result honestly as a heuristic / preliminary quality signal.
+
+--------------------------------------------------
+3. DISTINGUISH PAGE GEOMETRY FROM ROTATED CONTENT
+--------------------------------------------------
+
+The current system treats width > height as Landscape.
+
+Keep that rule, but separate:
+
+- Page Layout: Portrait / Landscape
+from
+- Rotation Metadata: 0 / 90 / 180 / 270 degrees, when available
+
+If rotation metadata indicates 90, 180, or 270 degrees:
+- flag the page for review
+- do not automatically revert the filing
+
+Important:
+A legitimate landscape financial statement must still only be a warning.
+
+Also state in the UI that image-content rotation that is not represented in PDF metadata is not yet automatically detected in this prototype.
+
+--------------------------------------------------
+4. ADD SUSPICIOUS FINANCIAL NUMBER DETECTION
+--------------------------------------------------
+
+Do NOT automatically correct ambiguous financial values.
+
+Add a small validation helper for extracted numeric strings.
+
+Flag values as suspicious when they contain malformed or ambiguous formatting such as:
+
+- multiple decimal separators:
+  6.837.912.90
+
+- inconsistent comma/dot groupings
+
+- unexpected alphabetic characters inside a numeric value:
+  A8849,399.68
+
+- otherwise malformed numeric strings that cannot be safely parsed
+
+For suspicious values:
+
+- preserve the original raw text
+- do not invent or silently correct the amount
+- assign review status:
+  "Check Source"
+- display an explanation such as:
+  "Ambiguous numeric formatting detected."
+
+If parsing is unsafe:
+- normalized peso value should remain blank / null
+- reviewer must verify the source
+
+This is important because blurred scanned financial statements may cause OCR/text recognition errors such as commas being read as periods.
+
+--------------------------------------------------
+5. IMPROVE REAL-UPLOAD STATUS MESSAGING
+--------------------------------------------------
+
+For real uploaded documents, clearly show one of these analysis outcomes:
+
+- Real PDF Analysis Completed
+- Real PDF Analysis Completed — Figures Need Review
+- Possible Scanned / Low-Text PDF
+- Extraction Failed — Manual Review Required
+
+Do not label a real uploaded document as successfully extracted when demo data was used.
+
+Keep demo documents clearly labeled as Demo.
+
+--------------------------------------------------
+6. PRESERVE CURRENT HITL WORKFLOW
+--------------------------------------------------
+
+Do not change:
+
+- Dashboard document queue
+- Open in Review
+- Currently Reviewing banner
+- Document Review
+- reviewer disposition
+- reviewer remarks
+- reviewer action storage
+- Figures Review
+- Save Corrections
+- CSV export
+- the three existing demo documents
+
+A real upload with extraction problems should still be reviewable in Document Review.
+
+--------------------------------------------------
+7. KEEP IMPLEMENTATION SMALL
+--------------------------------------------------
+
+Prefer updates to the existing modules such as:
+
+- pages/upload_intake.py
+- pdf_utils.py
+- validation_engine.py
+- extraction_engine.py
+- ui_helpers.py
+
+Only modify db.py/schema if absolutely necessary.
+
+Do not add OpenCV, OCR engines, external APIs, ML models, authentication, or background queues in this iteration.
+
+--------------------------------------------------
+8. TEST THESE SCENARIOS
+--------------------------------------------------
+
+Verify these cases:
+
+Scenario A:
+Readable text-layer AFS PDF
+Expected:
+real text/pages analyzed and real figure extraction attempted.
+
+Scenario B:
+PDF with pages but very little extracted text
+Expected:
+Possible Scanned / Low-Text PDF or Needs Review.
+No demo substitution.
+
+Scenario C:
+No figure matches
+Expected:
+0 extracted figures plus clear warning.
+No demo figures inserted.
+
+Scenario D:
+Landscape financial statement
+Expected:
+Warning / review, not automatic Revert.
+
+Scenario E:
+PDF rotation metadata = 90/180/270
+Expected:
+rotation warning.
+
+Scenario F:
+Malformed financial text such as:
+6.837.912.90
+or
+A8849,399.68
+
+Expected:
+raw value retained, value flagged Check Source,
+no unsafe normalized amount generated.
+
+Scenario G:
+Load Demo Document
+Expected:
+existing Audentia demo workflow remains unchanged.
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation:
+
+1. List exact files changed
+2. Explain how real-upload fallback behavior changed
+3. Explain the new page-quality / rotation checks
+4. Explain suspicious-number handling
+5. Confirm demo mode still works
+6. Confirm no OCR was implemented yet
+7. Confirm the app still runs
+
+STOP after this scope.
+Do not begin OCR implementation yet.
