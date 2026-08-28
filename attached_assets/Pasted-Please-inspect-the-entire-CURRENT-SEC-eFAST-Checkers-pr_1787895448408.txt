@@ -1,0 +1,222 @@
+Please inspect the entire CURRENT SEC eFAST Checkers prototype codebase and generate up-to-date technical/system documentation based only on what is actually implemented.
+
+IMPORTANT:
+- Do NOT modify any application code
+- Do NOT refactor anything
+- Do NOT add features
+- Do NOT fix bugs unless I explicitly ask later
+- This is a documentation-only task
+- Inspect the actual current files, database schema, page modules, config files, demo data, validation logic, extraction logic, reviewer workflow, and navigation
+- Do not guess. If something is mocked, seeded, incomplete, or future-facing, explicitly identify it as such
+
+Context:
+The prototype is an internal SEC eFAST Checkers MVP focused mainly on AFS validation and financial figure extraction.
+
+Please create the following documentation files inside a /docs folder:
+
+1. CURRENT_PROTOTYPE_DOCUMENTATION.md
+
+Include:
+
+A. Prototype Purpose
+- What the current prototype is intended to demonstrate
+- Current primary user
+- Current AFS-focused scope
+
+B. Current End-to-End Workflow
+Document the implemented flow:
+Dashboard
+→ Upload / Intake
+→ Document Review
+→ Page Review
+→ Reviewer Disposition
+→ AFS Figures Extraction Review
+→ Historical Company View
+→ Rankings / Research View
+
+Explain what actually happens at each stage.
+
+C. Current Modules
+Document each current page/module:
+- Dashboard
+- Upload / Intake
+- Document Review
+- AFS Figures Extraction Review
+- Historical Company View
+- Rankings / Research View
+- Settings / Editable Demo Data
+
+For each module state:
+- purpose
+- main functions
+- data source
+- whether the functionality is real, partially implemented, seeded/demo, or future-facing
+
+D. Current Validation Rules
+Document the actual implemented checks for:
+- company matching
+- SEC registration number
+- period covered
+- comparative year
+- submission type
+- page classification
+- page orientation
+- readability / image-quality proxy
+- completeness
+- suggested revert reasons
+
+Clearly identify which rules are currently rule-based or heuristic.
+
+E. Page Classification
+Document the currently recognized AFS page types and the keywords/rules used to classify them.
+
+F. Reviewer / HITL Workflow
+Document:
+- system recommendation
+- Accept
+- Needs Review
+- Revert
+- suggested revert reason
+- reviewer remarks
+- reviewer corrections
+- reviewer action history
+- active document handling
+- switching between documents
+
+G. AFS Figure Extraction
+Document the actual extraction implementation:
+- supported financial labels
+- raw label
+- normalized label
+- fiscal year
+- displayed value
+- normalized peso value
+- unit basis
+- source snippet
+- estimated confidence
+- reviewed value
+- correction workflow
+
+Clearly state any extraction limitations.
+
+H. Confidence
+Document how confidence is CURRENTLY implemented.
+Clearly distinguish:
+- actual calculated confidence
+- seeded / estimated prototype confidence
+- future planned confidence scoring
+
+Do not describe a future confidence model as if it already exists.
+
+I. Historical and Rankings Features
+Clearly explain which parts currently use seeded/demo data and which parts are database-driven.
+
+J. Database
+Document:
+- SQLite database usage
+- current tables
+- important fields
+- table relationships
+- document_id relationships
+- reviewer action persistence
+- extracted figure persistence
+
+K. Demo Data
+Document the 3 intended fictional demo companies and their scenarios:
+- Audentia Fortuna Holdings, Inc.
+- Malaya Northstar Manufacturing Corp.
+- Haraya Logistics and Trade, Inc.
+
+Identify the intended scenario for each:
+- Accept
+- Needs Review
+- Revert
+
+Also explain how demo seeding avoids overwriting reviewer work.
+
+L. Editable Configuration
+Document the role of:
+- config.py
+- demo_data.json
+- label_mapping.json
+- revert_reasons.json
+- sample_company_master.json
+- any other configuration file actually present
+
+M. Current Display / Formatting Rules
+Document current display behavior such as:
+- SEC / agency wording
+- PST timestamp display
+- peso formatting
+- green/eFAST-inspired theme
+- demo / live-data disclosures
+
+N. Known Limitations
+Include only limitations supported by the current codebase, such as:
+- text-layer PDF dependency where applicable
+- limited scanned-PDF/OCR support
+- rule/regex-based extraction
+- confidence limitations
+- seeded Historical/Rankings data
+- no production authentication
+- SQLite / prototype-scale limitations
+
+O. Current Technology Stack
+List the actual packages/frameworks being used.
+
+P. Current Project Structure
+Show the important files and folders and briefly explain each.
+
+Q. How to Run the Prototype
+Document the current Replit run process and dependencies.
+
+2. CURRENT_FEATURE_STATUS.md
+
+Create a concise matrix with columns:
+
+Feature | Status | Implementation Type | Current Data Source | Notes
+
+Use status values such as:
+- Working
+- Partial
+- Demo / Seeded
+- Future
+- Not Implemented
+
+Cover all major prototype features.
+
+3. CURRENT_TECHNICAL_ARCHITECTURE.md
+
+Document:
+- current application architecture
+- data flow
+- PDF processing flow
+- validation flow
+- extraction flow
+- normalization flow
+- reviewer correction flow
+- database persistence
+- session-state / navigation behavior
+- dependencies between modules
+
+Use a simple text/ASCII flow diagram if helpful.
+
+4. CURRENT_KNOWN_LIMITATIONS.md
+
+Create a short prioritized list of:
+- technical limitations
+- product limitations
+- extraction limitations
+- scalability limitations
+- production-readiness gaps
+
+Do NOT create a new roadmap yet.
+This document should describe the CURRENT STATE only.
+
+At the end:
+- Tell me exactly which documentation files were created
+- Give me a short summary of the current prototype state
+- List any areas where the implementation was ambiguous or could not be verified from the code
+
+STOP after generating the documentation.
+Do not modify the prototype.
