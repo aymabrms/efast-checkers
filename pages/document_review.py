@@ -7,7 +7,13 @@ from db import save_reviewer_action
 from pdf_utils import quality_label
 from storage import get_document, get_documents, get_pages, get_reviewer_actions, get_validations, load_revert_reasons
 from ui_helpers import highlight_terms, render_status, reviewing_banner, show_document_selector, status_badge
-from validation_engine import final_recommendation, suggested_revert_reason
+from validation_engine import (
+    evaluate_afs_completeness,
+    evaluate_bir_filing,
+    final_recommendation,
+    is_afs_submission,
+    suggested_revert_reason,
+)
 
 # Pages that count as primary AFS source documents
 _PRIMARY_PAGE_TYPES = {
@@ -37,6 +43,7 @@ def _render_validation_cards(validations):
     """Render validation results as styled cards instead of a plain dataframe."""
     status_styles = {
         "Passed": ("#d9f7e8", "#0f6b43", "#b7e8cb"),
+        "Detected": ("#d9f7e8", "#0f6b43", "#b7e8cb"),
         "Warning": ("#fff7d9", "#856404", "#f5e9a0"),
         "Failed": ("#fde8e8", "#b91c1c", "#f5bebe"),
         "Needs Review": ("#e8eef7", "#1a3a6b", "#bfcee8"),
@@ -67,6 +74,62 @@ def _render_validation_cards(validations):
             """,
             unsafe_allow_html=True,
         )
+
+
+def _render_afs_completeness_check(pages, document):
+    if not is_afs_submission(document):
+        return
+
+    completeness = evaluate_afs_completeness(pages)
+    bir = evaluate_bir_filing(pages)
+    st.subheader("AFS Completeness Check")
+    if completeness["status"] == "Passed":
+        st.success(completeness["message"])
+    elif completeness["status"] == "Failed":
+        st.error(completeness["message"])
+    else:
+        st.warning(completeness["message"])
+
+    rows = [
+        {
+            "Component": item["component"],
+            "Status": item["status"],
+            "Detected Page(s)": item["detected_pages"],
+        }
+        for item in completeness["components"]
+    ]
+    rows.append({
+        "Component": "Proof of BIR Filing",
+        "Status": bir["status"],
+        "Detected Page(s)": bir["detected_pages"],
+    })
+    status_styles = {
+        "Detected": ("#d9f7e8", "#0f6b43"),
+        "Missing": ("#fde8e8", "#b91c1c"),
+        "Needs Review": ("#fff7d9", "#856404"),
+    }
+    table_rows = []
+    for row in rows:
+        bg, fg = status_styles.get(row["Status"], ("#f5f5f5", "#333"))
+        table_rows.append(
+            "<tr>"
+            f"<td>{html_lib.escape(row['Component'])}</td>"
+            f"<td><span style='background:{bg};color:{fg};border-radius:999px;padding:.18rem .55rem;font-weight:700;font-size:.78rem;'>{html_lib.escape(row['Status'])}</span></td>"
+            f"<td>{html_lib.escape(row['Detected Page(s)'])}</td>"
+            "</tr>"
+        )
+    st.markdown(
+        "<table style='width:100%;border-collapse:collapse;margin:.35rem 0 .65rem;'>"
+        "<thead><tr>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Component</th>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Status</th>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Detected Page(s)</th>"
+        "</tr></thead><tbody>"
+        + "".join(table_rows)
+        + "</tbody></table>",
+        unsafe_allow_html=True,
+    )
+    st.caption(bir["note"])
 
 
 def render():
@@ -103,6 +166,8 @@ def render():
 
     pages = get_pages(document_id)
     validations = get_validations(document_id)
+
+    _render_afs_completeness_check(pages, document)
 
     # ── Validation Results ────────────────────────────────────────────────────
     st.subheader("Validation Results")

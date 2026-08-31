@@ -1,0 +1,182 @@
+Please implement one small enhancement to the current SEC eFAST Checkers prototype:
+
+STOCK CORPORATION AFS COMPLETENESS CHECK V1
+
+IMPORTANT:
+- Inspect the existing code first
+- Do NOT redesign the app
+- Do NOT add OCR, ML, external APIs, or new major dependencies
+- Reuse the current page classification and validation logic
+- Do NOT change Historical View, Rankings, demo data, reviewer workflow, or figure extraction
+- Keep this low-risk and low-credit
+- Stop after this scope
+
+GOAL
+
+For AFS submissions of stock corporations, show the reviewer which expected financial-statement components were detected and which are missing.
+
+Page order must NOT matter. Detect components by page content/classification, not by fixed page numbers.
+
+--------------------------------------------------
+1. REQUIRED AFS COMPONENTS
+--------------------------------------------------
+
+For the prototype, check for these components:
+
+1. Statement of Management's Responsibility
+2. Independent Auditor's Report
+3. Statement of Financial Position / Balance Sheet
+4. Statement of Profit or Loss / Statement of Income
+5. Other Comprehensive Income
+6. Statement of Changes in Equity
+7. Statement of Cash Flows
+8. Notes to Financial Statements
+
+Important flexibility:
+
+- Do NOT require Other Comprehensive Income to always be a separate page.
+- Treat the requirement as satisfied when comprehensive income is included in a combined income/comprehensive-income statement.
+- Page order may vary.
+- One component may span several pages.
+
+--------------------------------------------------
+2. COMPLETENESS RESULT
+--------------------------------------------------
+
+Create a document-level completeness result:
+
+PASSED
+- all required components are detected.
+
+NEEDS REVIEW
+- a component may be present but classification/evidence is uncertain.
+
+FAILED
+- one or more required components are clearly missing.
+
+For FAILED completeness:
+- suggested revert reason can remain "Incomplete pages" using the existing revert-reason configuration.
+
+If the uploaded document appears to contain none or almost none of the expected AFS components:
+- show a stronger message:
+  "The uploaded document does not appear to contain a complete Annual Financial Statement."
+- use the existing "Incorrect document filed" reason where appropriate.
+
+--------------------------------------------------
+3. BIR FILING PROOF CHECK
+--------------------------------------------------
+
+Add a separate check named:
+
+"Proof of BIR Filing"
+
+For V1, detect BIR-related evidence only from available extracted text/page classification.
+
+Look for reasonable indicators such as:
+- Bureau of Internal Revenue
+- BIR
+- Income Tax Return
+- Annual Income Tax Return
+- tax return
+- proof of filing / received text where available
+
+Results:
+
+DETECTED
+- BIR-related page/text evidence is found.
+
+NEEDS REVIEW
+- no BIR-related text evidence is detected.
+
+Important:
+- Do NOT claim that the prototype can visually detect or authenticate a BIR stamp.
+- Add a short note:
+  "Visual verification of a BIR received stamp is not yet automated in this prototype."
+
+For now, absence of BIR evidence should be shown clearly to the reviewer but should NOT require new OCR logic.
+
+--------------------------------------------------
+4. DOCUMENT REVIEW UI
+--------------------------------------------------
+
+Add a compact section in Document Review titled:
+
+"AFS Completeness Check"
+
+Show a simple checklist/table:
+
+Component | Status | Detected Page(s)
+
+Example:
+
+Statement of Management's Responsibility | Detected | Page 1
+Independent Auditor's Report              | Detected | Pages 3-5
+Statement of Financial Position           | Detected | Page 6
+Statement of Income                       | Detected | Page 7
+Other Comprehensive Income                | Missing  | —
+Statement of Changes in Equity             | Detected | Page 9
+Statement of Cash Flows                   | Detected | Page 10
+Notes to Financial Statements             | Detected | Pages 11-13
+Proof of BIR Filing                        | Needs Review | —
+
+Use existing green / warning / failed styling.
+
+Do not create a new page.
+
+--------------------------------------------------
+5. KEEP EXISTING VALIDATION FLOW
+--------------------------------------------------
+
+The completeness result should participate in the existing recommendation logic:
+
+- missing required AFS component -> Failed completeness
+- Failed -> Revert recommendation
+- uncertain classification -> Warning / Needs Review
+- complete document -> Passed
+
+Keep reviewer override and final disposition unchanged.
+
+--------------------------------------------------
+6. TEST THESE CASES
+--------------------------------------------------
+
+Test only these scenarios:
+
+A. Complete stock-corporation AFS
+Expected: completeness Passed.
+
+B. Only Statement of Management's Responsibility uploaded
+Expected: completeness Failed; missing components listed.
+
+C. Only BIR tax-return pages uploaded
+Expected:
+"The uploaded document does not appear to contain a complete Annual Financial Statement."
+Suggested reason: Incorrect document filed.
+
+D. AFS missing Statement of Cash Flows
+Expected: Failed; Cash Flows shown as Missing.
+
+E. Comprehensive Income combined with Income Statement
+Expected: both requirements treated as satisfied.
+
+F. BIR-related page detected
+Expected: Proof of BIR Filing = Detected.
+
+G. No BIR-related text detected
+Expected: Proof of BIR Filing = Needs Review, with note that visual BIR-stamp verification is not yet automated.
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Exact files changed
+2. Required-component rules implemented
+3. How combined Comprehensive Income is handled
+4. How BIR filing proof is checked
+5. Test results for scenarios A-G
+6. Confirmation that no OCR or stamp-image detection was added
+7. Confirmation that the app still runs
+
+STOP after this scope.

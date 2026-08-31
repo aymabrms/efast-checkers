@@ -5,15 +5,100 @@ from typing import Dict, List
 from config import TEXT_PREVIEW_MAX_CHARS
 from pdf_utils import quality_flag
 
-REQUIRED_SECTIONS = [
-    "Statement of Management's Responsibility",
-    "Independent Auditor's Report",
-    "Statement of Financial Position / Balance Sheet",
-    "Statement of Income / Receipts and Expenses",
-    "Statement of Comprehensive Income",
-    "Statement of Changes in Equity / Fund Balance",
-    "Statement of Cash Flows",
-    "Notes to Financial Statements",
+AFS_COMPONENT_DEFINITIONS = [
+    {
+        "name": "Statement of Management's Responsibility",
+        "page_types": {"statement of management's responsibility"},
+        "strong": [
+            r"statement\s+of\s+management(?:'|’)?s?\s+responsibility",
+            r"management(?:'|’)?s?\s+responsibility",
+        ],
+        "weak": [r"\bresponsibility\b"],
+    },
+    {
+        "name": "Independent Auditor's Report",
+        "page_types": {"independent auditor's report"},
+        "strong": [
+            r"independent\s+auditor",
+            r"auditor(?:'|’)?s?\s+report",
+            r"we\s+have\s+audited",
+        ],
+        "weak": [r"\bauditor\b"],
+    },
+    {
+        "name": "Statement of Financial Position / Balance Sheet",
+        "page_types": {"statement of financial position / balance sheet", "statement of financial position", "balance sheet"},
+        "strong": [
+            r"statement(?:s)?\s+of\s+financial\s+position",
+            r"\bbalance\s+sheet\b",
+        ],
+        "weak": [r"\btotal\s+assets\b", r"\btotal\s+liabilities\b"],
+    },
+    {
+        "name": "Statement of Profit or Loss / Statement of Income",
+        "page_types": {
+            "statement of income / receipts and expenses",
+            "statement of income",
+            "income statement",
+            "statement of operations",
+        },
+        "strong": [
+            r"statement(?:s)?\s+of\s+(?:profit\s+or\s+loss|income|operations)",
+            r"\bincome\s+statement\b",
+            r"\bprofit\s+or\s+loss\b",
+        ],
+        "weak": [r"\bnet\s+(?:income|loss)\b", r"\bgross\s+revenue\b"],
+    },
+    {
+        "name": "Other Comprehensive Income",
+        "page_types": {"statement of comprehensive income", "other comprehensive income"},
+        "strong": [
+            r"other\s+comprehensive\s+income",
+            r"statement(?:s)?\s+of\s+comprehensive\s+income",
+            r"\bcomprehensive\s+income\b",
+        ],
+        "weak": [r"\bcomprehensive\b"],
+    },
+    {
+        "name": "Statement of Changes in Equity",
+        "page_types": {"statement of changes in equity / fund balance", "statement of changes in equity"},
+        "strong": [
+            r"statement(?:s)?\s+of\s+changes\s+in\s+equity",
+            r"\bchanges\s+in\s+equity\b",
+        ],
+        "weak": [r"\bfund\s+balance\b", r"\bshareholders?'?\s+equity\b"],
+    },
+    {
+        "name": "Statement of Cash Flows",
+        "page_types": {"statement of cash flows"},
+        "strong": [
+            r"statement(?:s)?\s+of\s+cash\s+flows",
+            r"\bcash\s+flows\b",
+        ],
+        "weak": [r"\boperating\s+activities\b", r"\bfinancing\s+activities\b"],
+    },
+    {
+        "name": "Notes to Financial Statements",
+        "page_types": {"notes to financial statements"},
+        "strong": [
+            r"notes\s+to\s+financial\s+statements",
+            r"summary\s+of\s+significant\s+accounting",
+            r"basis\s+of\s+preparation",
+        ],
+        "weak": [r"\baccounting\s+policies\b"],
+    },
+]
+
+REQUIRED_SECTIONS = [item["name"] for item in AFS_COMPONENT_DEFINITIONS]
+
+BIR_EVIDENCE_PATTERNS = [
+    r"\bbureau\s+of\s+internal\s+revenue\b",
+    r"\bbir\b",
+    r"\bincome\s+tax\s+return\b",
+    r"\bannual\s+income\s+tax\s+return\b",
+    r"\btax\s+return\b",
+    r"\bproof\s+of\s+filing\b",
+    r"\breceived\s+for\s+filing\b",
 ]
 
 PAGE_RULES = [
@@ -60,6 +145,114 @@ def has_period(text: str, year: int) -> bool:
     return str(year) in (text or "")
 
 
+def is_afs_submission(metadata: Dict) -> bool:
+    report_type = str(metadata.get("report_type") or "").strip().lower()
+    submission_type = str(metadata.get("submission_type") or "").strip().lower()
+    return report_type == "afs" or "annual financial statement" in submission_type
+
+
+def _page_evidence_text(page: Dict) -> str:
+    return " ".join([
+        str(page.get("page_type") or ""),
+        str(page.get("text_preview") or page.get("text") or ""),
+    ]).lower()
+
+
+def _component_evidence(page: Dict, definition: Dict) -> str:
+    page_type = str(page.get("page_type") or "").strip().lower()
+    text = _page_evidence_text(page)
+    if page_type in definition["page_types"] or any(re.search(pattern, text) for pattern in definition["strong"]):
+        return "Detected"
+    if any(re.search(pattern, text) for pattern in definition["weak"]):
+        return "Needs Review"
+    return ""
+
+
+def format_page_numbers(page_numbers: List[int]) -> str:
+    numbers = sorted({int(number) for number in page_numbers if number is not None})
+    if not numbers:
+        return "—"
+    ranges = []
+    start = previous = numbers[0]
+    for number in numbers[1:]:
+        if number == previous + 1:
+            previous = number
+            continue
+        ranges.append(f"{start}–{previous}" if start != previous else str(start))
+        start = previous = number
+    ranges.append(f"{start}–{previous}" if start != previous else str(start))
+    prefix = "Page" if len(numbers) == 1 else "Pages"
+    return f"{prefix} " + ", ".join(ranges)
+
+
+def evaluate_afs_completeness(pages: List[Dict]) -> Dict:
+    components = []
+    for definition in AFS_COMPONENT_DEFINITIONS:
+        detected_pages = []
+        review_pages = []
+        for page in pages:
+            evidence = _component_evidence(page, definition)
+            if evidence == "Detected":
+                detected_pages.append(page.get("page_number"))
+            elif evidence == "Needs Review":
+                review_pages.append(page.get("page_number"))
+        status = "Detected" if detected_pages else "Needs Review" if review_pages else "Missing"
+        components.append({
+            "component": definition["name"],
+            "status": status,
+            "page_numbers": detected_pages or review_pages,
+            "detected_pages": format_page_numbers(detected_pages or review_pages),
+        })
+
+    missing = [item["component"] for item in components if item["status"] == "Missing"]
+    uncertain = [item["component"] for item in components if item["status"] == "Needs Review"]
+    evidence_count = sum(item["status"] != "Missing" for item in components)
+    if evidence_count == 0:
+        status = "Failed"
+        message = "The uploaded document does not appear to contain a complete Annual Financial Statement."
+        suggested_revert_reason = "Incorrect document filed"
+    elif missing:
+        status = "Failed"
+        message = "Missing required AFS component(s): " + ", ".join(missing) + "."
+        if uncertain:
+            message += " Needs review: " + ", ".join(uncertain) + "."
+        suggested_revert_reason = "Incomplete pages"
+    elif uncertain:
+        status = "Needs Review"
+        message = "AFS component evidence needs reviewer confirmation: " + ", ".join(uncertain) + "."
+        suggested_revert_reason = ""
+    else:
+        status = "Passed"
+        message = "All required AFS components were detected."
+        suggested_revert_reason = ""
+    return {
+        "status": status,
+        "message": message,
+        "suggested_revert_reason": suggested_revert_reason,
+        "components": components,
+    }
+
+
+def evaluate_bir_filing(pages: List[Dict]) -> Dict:
+    detected_pages = [
+        page.get("page_number")
+        for page in pages
+        if any(re.search(pattern, _page_evidence_text(page)) for pattern in BIR_EVIDENCE_PATTERNS)
+    ]
+    if detected_pages:
+        status = "Detected"
+        message = f"BIR-related text evidence detected on {format_page_numbers(detected_pages)}."
+    else:
+        status = "Needs Review"
+        message = "No BIR-related text evidence was detected."
+    return {
+        "status": status,
+        "message": message,
+        "detected_pages": format_page_numbers(detected_pages),
+        "note": "Visual verification of a BIR received stamp is not yet automated in this prototype.",
+    }
+
+
 def analyze_pages(raw_pages: List[Dict], metadata: Dict, company_master: Dict) -> List[Dict]:
     analyzed = []
     company_name = metadata.get("company_name") or company_master.get("company_name", "")
@@ -87,8 +280,22 @@ def analyze_pages(raw_pages: List[Dict], metadata: Dict, company_master: Dict) -
 
 def validate_document(pages: List[Dict], metadata: Dict, company_master: Dict) -> List[Dict]:
     all_text = "\n".join(page.get("text_preview", "") for page in pages)
-    page_types = {page.get("page_type") for page in pages}
     validations = []
+    if is_afs_submission(metadata):
+        completeness = evaluate_afs_completeness(pages)
+        validations.append({
+            "rule_name": "AFS Completeness Check",
+            "status": completeness["status"],
+            "message": completeness["message"],
+            "suggested_revert_reason": completeness["suggested_revert_reason"],
+        })
+        bir = evaluate_bir_filing(pages)
+        validations.append({
+            "rule_name": "Proof of BIR Filing",
+            "status": bir["status"],
+            "message": bir["message"] + " " + bir["note"],
+            "suggested_revert_reason": "",
+        })
     company_ok = fuzzy_company_match(all_text, company_master.get("company_name", "")) and company_master.get("sec_registration_no", "") in all_text
     validations.append({
         "rule_name": "Company master data match",
@@ -133,13 +340,6 @@ def validate_document(pages: List[Dict], metadata: Dict, company_master: Dict) -
         ),
         "suggested_revert_reason": "",
     })
-    missing = [section for section in REQUIRED_SECTIONS if section not in page_types]
-    validations.append({
-        "rule_name": "Completeness check",
-        "status": "Passed" if not missing else "Warning",
-        "message": "All key AFS sections are detected." if not missing else "Missing or not separately detected: " + ", ".join(missing[:4]),
-        "suggested_revert_reason": "" if not missing else "Incomplete pages",
-    })
     quality_failed = [page for page in pages if page.get("image_quality_flag") == "Failed"]
     validations.append({
         "rule_name": "Image readability",
@@ -154,7 +354,7 @@ def final_recommendation(validations: List[Dict]) -> str:
     statuses = [item.get("status") for item in validations]
     if "Failed" in statuses:
         return "Revert"
-    if "Warning" in statuses:
+    if "Warning" in statuses or "Needs Review" in statuses:
         return "Needs Review"
     return "Accept"
 
