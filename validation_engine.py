@@ -91,6 +91,14 @@ AFS_COMPONENT_DEFINITIONS = [
 
 REQUIRED_SECTIONS = [item["name"] for item in AFS_COMPONENT_DEFINITIONS]
 
+AUDITOR_EXCLUDED_COMPONENTS = {
+    "Statement of Financial Position / Balance Sheet",
+    "Statement of Profit or Loss / Statement of Income",
+    "Other Comprehensive Income",
+    "Statement of Changes in Equity",
+    "Statement of Cash Flows",
+}
+
 BIR_EVIDENCE_PATTERNS = [
     r"\bbureau\s+of\s+internal\s+revenue\b",
     r"\bbir\b",
@@ -159,7 +167,12 @@ def _page_evidence_text(page: Dict) -> str:
 
 
 def _component_evidence(page: Dict, definition: Dict) -> str:
-    page_type = str(page.get("page_type") or "").strip().lower()
+    page_type = str(page.get("page_type") or "").strip().lower().replace("’", "'")
+    if (
+        definition["name"] in AUDITOR_EXCLUDED_COMPONENTS
+        and page_type == "independent auditor's report"
+    ):
+        return ""
     text = _page_evidence_text(page)
     if page_type in definition["page_types"] or any(re.search(pattern, text) for pattern in definition["strong"]):
         return "Detected"

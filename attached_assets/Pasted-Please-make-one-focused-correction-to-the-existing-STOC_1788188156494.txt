@@ -1,0 +1,227 @@
+Please make one focused correction to the existing:
+
+STOCK CORPORATION AFS COMPLETENESS CHECK V1
+
+IMPORTANT:
+- Inspect the current implementation first
+- Do NOT redesign the UI
+- Do NOT add OCR, ML, external APIs, or new dependencies
+- Do NOT modify figure extraction, Historical View, Rankings, demo seeding, or reviewer workflow
+- Fix only the false-positive component detection identified in:
+  docs/AFS_COMPLETENESS_CHECK_V1_VALIDATION.md
+- Keep this small and low-risk
+- After implementation, generate an updated validation MD file
+- Stop after this scope
+
+PROBLEM
+
+The current completeness evaluator searches the full text of every page.
+
+As a result, an Independent Auditor's Report containing wording such as:
+
+"the financial statements comprise the statements of financial position, income,
+comprehensive income, changes in equity and cash flows"
+
+can incorrectly cause those actual financial statement components to be marked as Detected.
+
+This is not acceptable for the completeness check.
+
+BUSINESS RULE
+
+A page that merely REFERENCES another financial statement must not count as proof that the actual statement is present.
+
+--------------------------------------------------
+1. EXCLUDE AUDITOR REPORT FROM OTHER COMPONENT EVIDENCE
+--------------------------------------------------
+
+When evaluating these components:
+
+- Statement of Financial Position / Balance Sheet
+- Statement of Profit or Loss / Statement of Income
+- Other Comprehensive Income
+- Statement of Changes in Equity
+- Statement of Cash Flows
+
+Do NOT use a page classified as:
+
+Independent Auditor's Report
+
+as strong or weak evidence for those components.
+
+The Auditor's Report itself should still count normally for:
+
+Independent Auditor's Report.
+
+Do not remove or alter the Auditor's Report page classification.
+
+--------------------------------------------------
+2. PREFER ACTUAL STATEMENT EVIDENCE
+--------------------------------------------------
+
+For the five financial statement components above, mark Detected primarily when:
+
+A. the page classification exactly corresponds to that financial statement;
+
+OR
+
+B. the page contains strong statement-heading evidence and supporting financial-statement content.
+
+Examples:
+
+Financial Position:
+- "Statement of Financial Position"
+- "Balance Sheet"
+plus supporting terms such as assets / liabilities / equity
+
+Income:
+- "Statement of Income"
+- "Statement of Profit or Loss"
+- "Income Statement"
+
+Comprehensive Income:
+- "Statement of Comprehensive Income"
+- "Other Comprehensive Income"
+
+Changes in Equity:
+- "Statement of Changes in Equity"
+- equivalent strong heading already supported by current rules
+
+Cash Flows:
+- "Statement of Cash Flows"
+plus cash-flow activity terms where available
+
+Do NOT require fixed page numbers.
+Page order must remain flexible.
+
+--------------------------------------------------
+3. KEEP COMBINED INCOME / OCI SUPPORT
+--------------------------------------------------
+
+A legitimate combined page such as:
+
+"Statement of Profit or Loss and Other Comprehensive Income"
+
+must still satisfy both:
+- Statement of Profit or Loss / Statement of Income
+- Other Comprehensive Income
+
+Do not require a separate OCI page.
+
+--------------------------------------------------
+4. KEEP OTHER RULES UNCHANGED
+--------------------------------------------------
+
+Do not change:
+- Statement of Management's Responsibility detection
+- Auditor's Report detection
+- Notes detection
+- Proof of BIR Filing behavior
+- completeness table UI
+- reviewer recommendation logic
+
+--------------------------------------------------
+5. RETEST EXACT CASES
+--------------------------------------------------
+
+Test:
+
+A. Full AFS with all required components
+Expected: Passed.
+
+B. Auditor's Report mentions:
+financial position, income, comprehensive income, changes in equity and cash flows
+but the actual Cash Flows page is missing.
+
+Expected:
+Statement of Cash Flows = Missing
+Completeness = Failed
+Suggested reason = Incomplete pages
+
+C. Only SMR + Auditor's Report
+Expected:
+other financial statements are Missing, not Detected from auditor narrative.
+
+D. Combined Income + OCI statement
+Expected:
+both requirements = Detected.
+
+E. Actual Financial Position page
+Expected:
+Financial Position = Detected from that page, not the Auditor's Report.
+
+F. Existing 3 demo documents
+Expected:
+app still runs and demo records remain intact.
+
+--------------------------------------------------
+6. GENERATE UPDATED VALIDATION DOCUMENTATION
+--------------------------------------------------
+
+After implementing and testing the fix, create this file:
+
+docs/AFS_COMPLETENESS_CHECK_V1_VALIDATION_UPDATED.md
+
+The MD file must contain:
+
+1. Scope of the correction
+
+2. Exact files changed
+
+3. Previous issue
+- explain the Auditor's Report false-positive problem
+
+4. Updated business rule
+- reference text does not equal actual component presence
+
+5. Updated detection logic
+For each affected component, document:
+- allowed evidence
+- excluded evidence
+- how page numbers are determined
+
+6. Auditor's Report exclusion behavior
+Clearly explain that Auditor's Report pages cannot satisfy:
+- Financial Position
+- Income
+- Comprehensive Income
+- Changes in Equity
+- Cash Flows
+
+7. Combined Income + OCI behavior
+Confirm that one legitimate combined statement may still satisfy both requirements
+
+8. Test results for scenarios A-F
+Use a table:
+Scenario | Expected Result | Actual Result | Pass/Fail
+
+9. Demo impact
+State whether any of the 3 demo completeness results changed after the correction
+
+10. Known remaining limitations
+Include only remaining issues supported by the current implementation
+
+11. Final assessment
+Choose one:
+- Safe for prototype demonstration
+- Needs minor refinement
+- Requires further correction
+
+Do not describe OCR or future features as implemented.
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation and documentation, stop and report:
+
+1. Exact files changed
+2. Summary of the fix
+3. Results of tests A-F
+4. Whether demo completeness results changed
+5. Confirmation that no OCR or unrelated feature was added
+6. Confirmation that the app still runs
+7. Confirmation that this file was created:
+
+docs/AFS_COMPLETENESS_CHECK_V1_VALIDATION_UPDATED.md
+
+STOP after this scope.
