@@ -1,0 +1,83 @@
+Please inspect the CURRENT implementation of the recently added:
+
+STOCK CORPORATION AFS COMPLETENESS CHECK V1
+
+This is a documentation/validation task only.
+
+IMPORTANT:
+- Do NOT modify any code
+- Do NOT refactor anything
+- Do NOT add features
+- Do NOT run a large redesign
+- Inspect only the relevant completeness-check implementation and current test/demo behavior
+
+Create one file:
+
+docs/AFS_COMPLETENESS_CHECK_V1_VALIDATION.md
+
+Please document:
+
+1. Files changed for this feature
+
+2. Exact required AFS components currently checked:
+- Statement of Management's Responsibility
+- Independent Auditor's Report
+- Statement of Financial Position / Balance Sheet
+- Statement of Profit or Loss / Statement of Income
+- Other Comprehensive Income
+- Statement of Changes in Equity
+- Statement of Cash Flows
+- Notes to Financial Statements
+- Proof of BIR Filing as a separate check
+
+3. Exact detection logic used for each component
+For each component specify:
+- keywords/rules
+- whether page classification is used
+- whether raw page text is searched
+- how detected page numbers are determined
+
+4. IMPORTANT FALSE-POSITIVE CHECK
+
+Inspect whether an Independent Auditor's Report that merely contains wording such as:
+
+"the financial statements comprise the statements of financial position, income, comprehensive income, changes in equity and cash flows"
+
+can incorrectly cause those financial-statement components to be marked as Detected.
+
+The current UI appears to show Page 3 as evidence for several separate AFS components.
+
+Clearly report:
+- whether this can happen
+- why
+- which rules cause it
+- which components are affected
+
+Do NOT fix it yet.
+
+5. Document how combined Income + Other Comprehensive Income is currently handled.
+
+6. Document how Proof of BIR Filing is currently detected.
+Clearly confirm that visual BIR stamp authentication is NOT implemented.
+
+7. Validate these scenarios from the current implementation:
+- complete AFS
+- only SMR
+- only BIR/tax-return pages
+- AFS missing Cash Flows
+- combined Income/OCI
+- no BIR text evidence
+
+8. List known limitations of Completeness Check V1.
+
+9. Give a short conclusion:
+- Safe as-is for demo
+- Needs minor rule refinement
+- or Requires correction before relying on completeness result
+
+STOP after creating the MD file.
+
+Tell me:
+- file created
+- main finding
+- whether false-positive component detection exists
