@@ -198,6 +198,7 @@ GIS_STOCK_REQUIRED = [
     "Directors / Officers",
     "Stockholders' Information",
     "Investments / Other Corporate Information",
+    "Corporate Secretary / Notarization",
 ]
 
 GIS_NON_STOCK_REQUIRED = [
@@ -205,10 +206,10 @@ GIS_NON_STOCK_REQUIRED = [
     "AMLA Information",
     "Directors / Officers",
     "Investments / Other Corporate Information",
+    "Corporate Secretary / Notarization",
 ]
 
 GIS_OPTIONAL_COMPONENTS = [
-    "Corporate Secretary / Notarization",
     "Annex A / Primary Purpose",
 ]
 
@@ -219,8 +220,9 @@ GIS_PERIOD_YEAR_PATTERNS = [
 
 GIS_MEETING_DATE_LABELS = {
     "Annual Meeting": [
-        r"actual\s+date\s+of\s+annual\s+meeting",
-        r"date\s+of\s+annual\s+meeting",
+        r"\bactual\s+date\s+of\s+annual\s+meeting\b(?!\s+per\s+by[-\s]?laws)",
+        r"\bdate\s+of\s+actual\s+meeting\b",
+        r"\bdate\s+of\s+annual\s+meeting\b(?!\s+per\s+by[-\s]?laws)",
     ],
     "Special Meeting": [
         r"actual\s+date\s+of\s+special\s+meeting",
@@ -359,6 +361,8 @@ def _gis_page_is_usable(page: Dict) -> bool:
 
 def _gis_component_pages(pages: List[Dict], component: str) -> List[int]:
     patterns = GIS_PAGE_PATTERNS.get(component, [])
+    if component == "Corporate Secretary / Notarization":
+        patterns = GIS_PAGE_PATTERNS["Corporate Secretary Attestation / Notarization"]
     matches = []
     for page in pages:
         if not _gis_page_is_usable(page):
@@ -445,9 +449,7 @@ def evaluate_gis_completeness(pages: List[Dict], corporation_type: str = "Stock"
     for component in GIS_OPTIONAL_COMPONENTS:
         page_numbers = _gis_component_pages(
             pages,
-            "Corporate Secretary Attestation / Notarization"
-            if component == "Corporate Secretary / Notarization"
-            else component,
+            component,
         )
         components.append({
             "component": component,

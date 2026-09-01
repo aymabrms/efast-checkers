@@ -1,0 +1,226 @@
+Please make one small template-alignment correction to the existing:
+
+GIS REVIEW LITE V1
+
+IMPORTANT:
+- Inspect the current implementation first
+- Do NOT redesign the UI
+- Do NOT add new dependencies, OCR engines, NLP, ML, APIs, or new GIS features
+- Do NOT modify BOD routing behavior, QR handling, Annex A behavior, AFS functionality, figure extraction, confidence, Historical View, or Rankings
+- Fix only the two business-rule alignment issues below
+- Keep this extremely small and low-risk
+- Generate the requested validation MD
+- Stop after this scope
+
+==================================================
+1. CORPORATE SECRETARY / NOTARIZATION IS REQUIRED
+==================================================
+
+Current issue:
+
+GIS Review Lite currently treats Corporate Secretary / Notarization as optional/informational in GIS completeness.
+
+Correct this.
+
+For BOTH:
+
+- GIS Stock
+- GIS Non-Stock
+
+Corporate Secretary Attestation / Notarization must be a REQUIRED GIS completeness component.
+
+Use existing text evidence such as:
+
+- Corporate Secretary
+- declare under penalty of perjury
+- hereby attest
+- SUBSCRIBED AND SWORN
+- ACKNOWLEDGMENT
+- ACKNOWLEDGEMENT
+- NOTARY PUBLIC
+- DOC. NO.
+- PAGE NO.
+- BOOK NO.
+- SERIES OF
+
+Business behavior:
+
+A. If the attestation/notarization section is not detected:
+- Component = Missing
+- GIS Completeness = Failed
+
+B. If appropriate attestation/notarial text is detected:
+- Component = Detected
+
+Continue showing separately:
+
+Signature / Notarial Stamp:
+Visual Confirmation Required
+
+IMPORTANT:
+
+Do NOT claim automated verification of:
+- Corporate Secretary signature
+- Notary signature
+- stamp
+- seal
+- authenticity
+- legal sufficiency
+
+The required completeness rule only verifies that the expected attestation/notarization component appears to be present.
+
+==================================================
+2. ACTUAL MEETING DATE LABEL VARIATIONS
+==================================================
+
+Ensure GIS Period Covered detection explicitly supports both real template labels:
+
+Stock:
+"ACTUAL DATE OF ANNUAL MEETING"
+
+Non-Stock:
+"DATE OF ACTUAL MEETING"
+
+Normalize both as:
+
+ACTUAL_MEETING_DATE
+
+IMPORTANT:
+
+Do NOT confuse these with:
+
+"DATE OF ANNUAL MEETING PER BY-LAWS"
+
+The By-Laws meeting date is a different field and must not be used as the detected Actual Meeting Date for normal Annual Meeting Period Covered validation.
+
+Keep existing:
+- Special Meeting
+- Amendment
+- No Meeting / ANHAM
+
+behavior unchanged.
+
+==================================================
+3. KEEP BOD LOGIC UNCHANGED
+==================================================
+
+The 2020 GIS templates place a Beneficial Ownership Declaration after the normal GIS body.
+
+The BOD page explicitly contains wording equivalent to:
+
+"This page is not for uploading on the SEC iView."
+
+Therefore preserve the existing behavior:
+
+- BOD = Conditional / Legacy
+- detect separately
+- detected page may be selected for routing
+- excluded from GIS completeness PASS/FAIL
+- absence does not fail GIS
+- accepted QA copy may legitimately contain no BOD
+- no substantive BOD validation
+- no actual external forwarding
+
+Do NOT make BOD required.
+
+==================================================
+4. REGRESSION TESTS
+==================================================
+
+Test:
+
+A. Stock GIS with complete body including attestation/notarization
+Expected:
+Completeness can Pass.
+
+B. Stock GIS missing attestation/notarization page
+Expected:
+Corporate Secretary / Notarization = Missing
+Completeness = Failed.
+
+C. Non-Stock GIS with complete body including attestation/notarization
+Expected:
+Completeness can Pass.
+
+D. Non-Stock GIS missing attestation/notarization
+Expected:
+Completeness = Failed.
+
+E. Attestation/notarial text present but signature/stamp not machine-verifiable
+Expected:
+Component = Detected
+Visual Confirmation Required remains shown.
+
+F. Stock label:
+ACTUAL DATE OF ANNUAL MEETING
+Expected:
+correctly detected as Actual Meeting Date.
+
+G. Non-Stock label:
+DATE OF ACTUAL MEETING
+Expected:
+correctly detected as Actual Meeting Date.
+
+H. DATE OF ANNUAL MEETING PER BY-LAWS appears alongside Actual Meeting Date
+Expected:
+By-Laws date is NOT used as Period Covered evidence.
+
+I. BOD page detected
+Expected:
+remains outside completeness.
+
+J. Existing GIS Review Lite scenarios
+Expected:
+remain operational.
+
+K. Existing AFS workflows
+Expected:
+unchanged.
+
+==================================================
+5. CREATE VALIDATION MD
+==================================================
+
+Create:
+
+docs/GIS_REVIEW_LITE_V1_TEMPLATE_ALIGNMENT_VALIDATION.md
+
+Document:
+
+1. Scope
+2. Exact files changed
+3. Required Corporate Secretary / Notarization rule
+4. Machine-detectable evidence versus visual confirmation
+5. Stock Actual Meeting Date label
+6. Non-Stock Actual Meeting Date label
+7. By-Laws date exclusion
+8. Confirmation BOD behavior remains unchanged
+9. Test results A-K
+10. GIS regression results
+11. AFS regression results
+12. Known limitations
+
+Final assessment:
+
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+
+==================================================
+OUTPUT
+==================================================
+
+After implementation report:
+
+1. Exact files changed
+2. Summary of both corrections
+3. Test results A-K
+4. Confirmation BOD logic was not changed
+5. Confirmation AFS remains intact
+6. Confirmation this file was created:
+
+docs/GIS_REVIEW_LITE_V1_TEMPLATE_ALIGNMENT_VALIDATION.md
+
+7. Confirmation app still runs
+
+STOP after this scope.

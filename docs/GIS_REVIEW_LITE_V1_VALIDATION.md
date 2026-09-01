@@ -75,7 +75,7 @@ GIS Stock completeness requires content evidence for these component groups:
 5. Stockholders' Information
 6. Investments / Other Corporate Information
 
-Corporate Secretary / Notarization is displayed as an optional/informational component and also receives a separate text-evidence validation.
+Corporate Secretary / Notarization is a required completeness component for both Stock and Non-Stock GIS. It also receives a separate text-evidence validation.
 
 Stockholders' information is content-based. At least one valid stockholders section is sufficient. Pages 5, 6, and 7 are not hard-coded or individually required.
 
@@ -95,7 +95,7 @@ Non-Stock does not require:
 - Capital Structure
 - Stockholders' Information
 
-Corporate Secretary / Notarization, Annex A, and BOD remain optional or conditional items and do not alter the required-profile calculation.
+Corporate Secretary / Notarization is required. Annex A remains optional and BOD remains conditional; BOD does not alter the required-profile calculation.
 
 ## 6. Period Year logic
 
