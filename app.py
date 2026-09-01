@@ -9,7 +9,7 @@ import pages.historical_company as historical_company
 import pages.rankings as rankings
 import pages.settings_demo_data as settings_demo_data
 import pages.upload_intake as upload_intake
-from storage import ensure_all_demo_documents, get_document, get_documents, is_demo_document, seed_company_master
+from storage import ensure_all_demo_documents, get_documents, is_demo_document, seed_company_master
 
 PAGES = {
     "Dashboard": dashboard.render,
@@ -150,16 +150,6 @@ def main():
     st.sidebar.title(APP_TITLE)
     st.sidebar.caption(APP_SUBTITLE)
 
-    # Support programmatic navigation (e.g. "Open in Review" from Dashboard)
-    nav_to = st.session_state.pop("_nav_to", None)
-    if nav_to and nav_to == "Settings / Editable Demo Data":
-        nav_to = "Demo Data & Configuration"
-    if nav_to:
-        st.session_state["_current_page"] = nav_to
-        if nav_to == "Document Review":
-            active_document = get_document(st.session_state.get("active_document_id"))
-            if active_document and active_document.get("report_type") in {"AFS", "GIS"}:
-                st.session_state["review_context"] = active_document["report_type"]
     if "_current_page" not in st.session_state:
         st.session_state["_current_page"] = "Dashboard"
     if "review_context" not in st.session_state:

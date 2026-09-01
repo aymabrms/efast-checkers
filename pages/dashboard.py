@@ -3,139 +3,320 @@ import streamlit as st
 
 from db import query
 from storage import get_documents, is_demo_document
-from ui_helpers import format_timestamp_pst, metric_card, recommendation_badge, status_badge
+from ui_helpers import format_timestamp_pst, metric_card, recommendation_badge
 
-def render():
-    st.header("Dashboard")
-    st.caption("AFS intake, validation, and extraction overview for reviewer operations.")
 
-    st.markdown(
-        "<span class='badge' style='background:#d9f7e8;color:#0f6b43'>Live DB Data</span> "
-        "All metrics and queues below reflect documents currently stored in the database.",
-        unsafe_allow_html=True,
-    )
+REPORT_TYPES = ("AFS", "GIS")
+REPORT_VIEW_OPTIONS = ("All Reports", "AFS", "GIS")
+OUTCOME_ORDER = (
+    "Needs Review",
+    "Accepted",
+    "Reverted",
+    "No Final Recommendation / Pending",
+)
+ISSUE_STATUSES = ("Warning", "Failed", "Needs Review")
 
-    documents = get_documents()
-    validations = query("SELECT status, COUNT(*) AS count FROM validations GROUP BY status")
-    figures_count = query("SELECT COUNT(*) AS count FROM extracted_figures")
-    reviewer_edits = query("SELECT COUNT(*) AS count FROM extracted_figures WHERE reviewer_edited = 1")
-    actions = query("SELECT final_recommendation, COUNT(*) AS count FROM reviewer_actions GROUP BY final_recommendation")
 
-    # Per-document latest recommendation for queue display
-    doc_actions = query(
+def _filtered_documents(documents, report_view):
+    if report_view == "All Reports":
+        return documents
+    return [
+        document for document in documents
+        if str(document.get("report_type") or "").upper() == report_view
+    ]
+
+
+def _review_outcome(recommendation):
+    normalized = str(recommendation or "").strip()
+    return {
+        "Accept": "Accepted",
+        "Revert": "Reverted",
+        "Needs Review": "Needs Review",
+    }.get(normalized, "No Final Recommendation / Pending")
+
+
+def _selected_report_types(report_view, documents):
+    if report_view == "All Reports":
+        return list(REPORT_TYPES)
+    return [
+        report_view,
+    ] if any(
+        str(document.get("report_type") or "").upper() == report_view
+        for document in documents
+    ) else []
+
+
+def _latest_recommendations():
+    rows = query(
         "SELECT document_id, final_recommendation FROM reviewer_actions "
         "WHERE id IN (SELECT MAX(id) FROM reviewer_actions GROUP BY document_id)"
     )
-    rec_by_doc = {row["document_id"]: row["final_recommendation"] for row in doc_actions}
+    return {
+        row["document_id"]: _review_outcome(row.get("final_recommendation"))
+        for row in rows
+    }
 
-    validation_counts = {row["status"]: row["count"] for row in validations}
-    action_counts = {row["final_recommendation"]: row["count"] for row in actions}
-    needs_review = validation_counts.get("Warning", 0) + validation_counts.get("Failed", 0)
 
-    cols = st.columns(6)
-    cards = [
-        ("Uploaded Documents", len(documents), "Stored intake records"),
-        ("Needing Review", needs_review, "Warnings or failed rules"),
-        ("Accepted", action_counts.get("Accept", 0), "Reviewer recommendations"),
-        ("Revert", action_counts.get("Revert", 0), "Reviewer recommendations"),
-        ("Extracted Figures", figures_count[0]["count"] if figures_count else 0, "Rows in reusable database"),
-        ("Corrected Entries", reviewer_edits[0]["count"] if reviewer_edits else 0, "Reviewer-edited values"),
+def _render_summary_cards(report_view, documents, outcomes, validation_rows, figure_rows):
+    report_type_counts = {
+        report_type: sum(
+            str(document.get("report_type") or "").upper() == report_type
+            for document in documents
+        )
+        for report_type in REPORT_TYPES
+    }
+    selected_ids = {document["id"] for document in documents}
+    selected_outcomes = [
+        outcomes.get(document["id"], "No Final Recommendation / Pending")
+        for document in documents
     ]
-    for col, card in zip(cols, cards):
-        with col:
+    needs_review = sum(
+        outcome in {"Needs Review", "No Final Recommendation / Pending"}
+        for outcome in selected_outcomes
+    )
+    accepted = selected_outcomes.count("Accepted")
+    reverted = selected_outcomes.count("Reverted")
+
+    if report_view == "All Reports":
+        cards = [
+            ("Total Reports", len(documents), "All stored AFS and GIS records"),
+            ("AFS Reports", report_type_counts["AFS"], "Stored AFS records"),
+            ("GIS Reports", report_type_counts["GIS"], "Stored GIS records"),
+            ("Needs Review", needs_review, "Needs Review or pending reviewer action"),
+            ("Accepted", accepted, "Saved reviewer recommendations"),
+            ("Reverted", reverted, "Saved reviewer recommendations"),
+        ]
+    elif report_view == "AFS":
+        afs_figures = [
+            row for row in figure_rows
+            if row["document_id"] in selected_ids
+        ]
+        cards = [
+            ("AFS Reports", len(documents), "Stored AFS records"),
+            ("Needs Review", needs_review, "Needs Review or pending reviewer action"),
+            ("Accepted", accepted, "Saved reviewer recommendations"),
+            ("Reverted", reverted, "Saved reviewer recommendations"),
+            ("Extracted Figures", len(afs_figures), "Stored AFS figure rows"),
+            (
+                "Corrected Figures / Entries",
+                sum(bool(row.get("reviewer_edited")) for row in afs_figures),
+                "Reviewer-edited AFS figure rows",
+            ),
+        ]
+    else:
+        gis_validations = [
+            row for row in validation_rows
+            if row["document_id"] in selected_ids
+            and str(row.get("report_type") or "").upper() == "GIS"
+        ]
+        issue_rows = [
+            row for row in gis_validations
+            if row.get("status") in ISSUE_STATUSES
+        ]
+        completeness_issues = sum(
+            "completeness" in str(row.get("rule_name") or "").lower()
+            for row in issue_rows
+        )
+        quality_orientation_issues = sum(
+            any(
+                term in str(row.get("rule_name") or "").lower()
+                for term in ("quality", "orientation")
+            )
+            for row in issue_rows
+        )
+        cards = [
+            ("GIS Reports", len(documents), "Stored GIS records"),
+            ("Needs Review", needs_review, "Needs Review or pending reviewer action"),
+            ("Accepted", accepted, "Saved reviewer recommendations"),
+            ("Reverted", reverted, "Saved reviewer recommendations"),
+            ("Completeness Issues", completeness_issues, "Warning, failed, or review GIS validations"),
+            (
+                "Quality / Orientation Issues",
+                quality_orientation_issues,
+                "Warning, failed, or review GIS validations",
+            ),
+        ]
+
+    columns = st.columns(6)
+    for column, card in zip(columns, cards):
+        with column:
             metric_card(*card)
 
+
+def _render_recent_queue(documents, recommendations):
     st.subheader("Recent Document Queue")
-    if documents:
-        # Build a presentation-friendly display dataframe
-        rows = []
-        for doc in documents:
-            rec = rec_by_doc.get(doc["id"], "")
-            source = "Demo" if is_demo_document(doc) else "Uploaded"
-            rows.append({
-                "ID": doc["id"],
-                "Company Name": doc["company_name"],
-                "SEC Registration No.": doc["sec_registration_no"],
-                "Report Type": doc["report_type"],
-                "Period Covered Year": doc["period_covered_year"],
-                "Submission Type": doc["submission_type"],
-                "Recommendation": rec or "—",
-                "Source": source,
-                "Uploaded At": format_timestamp_pst(doc.get("uploaded_at") or ""),
-            })
-        display_df = pd.DataFrame(rows)
+    if not documents:
+        st.info("No stored documents match the selected Report View.")
+        return
 
-        st.dataframe(
-            display_df,
-            width="stretch",
-            hide_index=True,
-            column_config={
-                "ID": st.column_config.NumberColumn("ID", width="small"),
-                "Company Name": st.column_config.TextColumn("Company Name"),
-                "SEC Registration No.": st.column_config.TextColumn("SEC Registration No."),
-                "Report Type": st.column_config.TextColumn("Report Type", width="small"),
-                "Period Covered Year": st.column_config.NumberColumn("Period", width="small"),
-                "Submission Type": st.column_config.TextColumn("Submission Type", width="medium"),
-                "Recommendation": st.column_config.TextColumn("Recommendation", width="medium"),
-                "Source": st.column_config.TextColumn("Source", width="small"),
-                "Uploaded At": st.column_config.TextColumn("Uploaded At", width="medium"),
-            },
-        )
+    rows = []
+    for document in documents:
+        rows.append({
+            "ID": document["id"],
+            "Company Name": document["company_name"],
+            "SEC Registration No.": document["sec_registration_no"],
+            "Report Type": document["report_type"],
+            "Period Covered Year": document["period_covered_year"],
+            "Submission Type": document["submission_type"],
+            "Recommendation": recommendations.get(
+                document["id"],
+                "No Final Recommendation / Pending",
+            ),
+            "Source": "Demo" if is_demo_document(document) else "Uploaded",
+            "Uploaded At": format_timestamp_pst(document.get("uploaded_at") or ""),
+        })
 
-        # Recommendation badge legend
-        st.markdown(
-            "<div style='margin:.4rem 0 .75rem;font-size:.82rem;color:#587267;'>"
-            "Recommendations: "
-            + recommendation_badge("Accept")
-            + "&nbsp;"
-            + recommendation_badge("Revert")
-            + "&nbsp;"
-            + recommendation_badge("Needs Review")
-            + "&nbsp;&nbsp;·&nbsp;&nbsp;"
-            "<span class='badge' style='background:#f0f0f0;color:#555;font-size:.78rem;padding:.2rem .55rem;'>Demo</span> = seeded demo document"
-            "</div>",
-            unsafe_allow_html=True,
-        )
+    display_df = pd.DataFrame(rows)
+    st.dataframe(
+        display_df,
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "ID": st.column_config.NumberColumn("ID", width="small"),
+            "Company Name": st.column_config.TextColumn("Company Name"),
+            "SEC Registration No.": st.column_config.TextColumn("SEC Registration No."),
+            "Report Type": st.column_config.TextColumn("Report Type", width="small"),
+            "Period Covered Year": st.column_config.NumberColumn("Period", width="small"),
+            "Submission Type": st.column_config.TextColumn("Submission Type", width="medium"),
+            "Recommendation": st.column_config.TextColumn("Recommendation", width="medium"),
+            "Source": st.column_config.TextColumn("Source", width="small"),
+            "Uploaded At": st.column_config.TextColumn("Uploaded At", width="medium"),
+        },
+    )
+    st.markdown(
+        "<div style='margin:.4rem 0 .75rem;font-size:.82rem;color:#587267;'>"
+        "Recommendations: "
+        + recommendation_badge("Accept")
+        + "&nbsp;"
+        + recommendation_badge("Revert")
+        + "&nbsp;"
+        + recommendation_badge("Needs Review")
+        + "&nbsp;&nbsp;·&nbsp;&nbsp;"
+        "<span class='badge' style='background:#f0f0f0;color:#555;font-size:.78rem;padding:.2rem .55rem;'>"
+        "Demo</span> = seeded demo document"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
-        st.markdown("**Open a document for review:**")
-        doc_labels = {
-            f"#{doc['id']} — {doc['company_name']} — {doc['period_covered_year']} {doc['report_type']}": doc
-            for doc in documents
+
+def _render_reports_by_type(report_view, documents):
+    st.subheader("Reports by Type")
+    selected_types = _selected_report_types(report_view, documents)
+    rows = [
+        {
+            "Report Type": report_type,
+            "Reports": sum(
+                str(document.get("report_type") or "").upper() == report_type
+                for document in documents
+            ),
         }
-        col_sel, col_btn = st.columns([4, 1])
-        with col_sel:
-            chosen_label = st.selectbox(
-                "Select document",
-                list(doc_labels.keys()),
-                label_visibility="collapsed",
-                key="dashboard_doc_pick",
-            )
-        with col_btn:
-            if st.button("Open in Review →", type="primary", use_container_width=True):
-                chosen_doc = doc_labels[chosen_label]
-                st.session_state["active_document_id"] = chosen_doc["id"]
-                st.session_state["_nav_to"] = "Document Review"
-                st.rerun()
-    else:
-        st.info("The queue is empty. Load the demo document or upload a readable PDF.")
+        for report_type in selected_types
+    ]
+    if not rows:
+        st.info("No report-type records are available for this view.")
+        return
+    chart_df = pd.DataFrame(rows).set_index("Report Type")
+    st.bar_chart(chart_df, height=240, color="#0f5b3f")
 
-    left, right = st.columns([1, 1])
-    with left:
-        st.subheader("Validation Summary")
-        if validations:
-            df = pd.DataFrame(validations)
-            df["Status"] = df["status"].map(status_badge)
-            st.bar_chart(df.set_index("status")["count"], color="#0f5b3f")
-            st.markdown(" ".join(df["Status"].tolist()), unsafe_allow_html=True)
-        else:
-            st.info("No validation results yet.")
-    with right:
-        st.subheader("Extraction Volume by Field")
-        rows = query(
-            "SELECT normalized_label, COUNT(*) AS count FROM extracted_figures "
-            "GROUP BY normalized_label ORDER BY count DESC"
-        )
-        if rows:
-            st.bar_chart(pd.DataFrame(rows).set_index("normalized_label")["count"])
-        else:
-            st.info("No extracted figures yet.")
+
+def _render_review_outcomes(report_view, documents, outcomes):
+    st.subheader("Review Outcomes by Report Type")
+    selected_types = _selected_report_types(report_view, documents)
+    rows = []
+    for report_type in selected_types:
+        type_documents = [
+            document for document in documents
+            if str(document.get("report_type") or "").upper() == report_type
+        ]
+        type_outcomes = [
+            outcomes.get(document["id"], "No Final Recommendation / Pending")
+            for document in type_documents
+        ]
+        rows.append({
+            "Report Type": report_type,
+            **{
+                outcome: type_outcomes.count(outcome)
+                for outcome in OUTCOME_ORDER
+            },
+        })
+    if not rows:
+        st.info("No reviewer outcomes are available for this view.")
+        return
+    chart_df = pd.DataFrame(rows).set_index("Report Type")
+    st.bar_chart(chart_df[list(OUTCOME_ORDER)], height=240)
+    st.caption("Pending includes documents without a saved final recommendation.")
+
+
+def _render_validation_issues(report_view, documents, validation_rows):
+    st.subheader("Top Validation Issues")
+    selected_ids = {document["id"] for document in documents}
+    rows = [
+        row for row in validation_rows
+        if row["document_id"] in selected_ids
+        and row.get("status") in ISSUE_STATUSES
+    ]
+    if not rows:
+        st.info("No Warning, Failed, or Needs Review validation records are available for this view.")
+        return
+
+    issue_df = pd.DataFrame(rows)
+    issue_df = (
+        issue_df.groupby(["rule_name", "status"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=ISSUE_STATUSES, fill_value=0)
+        .sort_values(list(ISSUE_STATUSES), ascending=False)
+    )
+    issue_df.index.name = "Validation Issue"
+    issue_df.columns.name = None
+    st.bar_chart(issue_df, height=320)
+    st.caption("Counts are aggregated directly from stored validation results.")
+
+
+def render():
+    st.header("Dashboard")
+    st.caption(
+        "Executive overview of AFS and GIS intake, validation, and reviewer operations."
+    )
+    st.markdown(
+        "<span class='badge' style='background:#d9f7e8;color:#0f6b43'>Live DB Data</span> "
+        "All metrics, charts, and queues below reflect records currently stored in the database.",
+        unsafe_allow_html=True,
+    )
+
+    report_view = st.radio(
+        "Report View",
+        REPORT_VIEW_OPTIONS,
+        index=0,
+        horizontal=True,
+        key="dashboard_report_view",
+    )
+
+    all_documents = get_documents()
+    documents = _filtered_documents(all_documents, report_view)
+    recommendations = _latest_recommendations()
+    validation_rows = query(
+        "SELECT v.document_id, d.report_type, v.rule_name, v.status "
+        "FROM validations v JOIN documents d ON d.id = v.document_id"
+    )
+    figure_rows = query(
+        "SELECT f.document_id, f.reviewer_edited "
+        "FROM extracted_figures f JOIN documents d ON d.id = f.document_id "
+        "WHERE d.report_type = 'AFS'"
+    )
+
+    _render_summary_cards(
+        report_view,
+        documents,
+        recommendations,
+        validation_rows,
+        figure_rows,
+    )
+    _render_recent_queue(documents, recommendations)
+
+    top_left, top_right = st.columns([1, 1])
+    with top_left:
+        _render_reports_by_type(report_view, documents)
+    with top_right:
+        _render_review_outcomes(report_view, documents, recommendations)
+    _render_validation_issues(report_view, documents, validation_rows)

@@ -1,0 +1,418 @@
+Please implement one focused, low-risk enhancement to the current SEC eFAST Checkers prototype:
+
+DASHBOARD AFS/GIS EXECUTIVE SUMMARY V1
+
+IMPORTANT:
+- Inspect the current Dashboard implementation and existing database/data structures first.
+- Keep this credit-thrift.
+- Do NOT redesign other modules.
+- Do NOT change AFS or GIS validation rules.
+- Do NOT modify OCR, confidence/HITL, BOD, completeness, reviewer disposition, Figures Review, Historical View, Rankings, or database schema.
+- Do NOT invent metrics that cannot be derived from existing records.
+- Use only existing stored data.
+- Preserve the current 3 AFS demos + 1 GIS demo.
+- Create the requested validation MD.
+- STOP after this scope.
+
+==================================================
+1. DASHBOARD PURPOSE
+==================================================
+
+Change the Dashboard from a document-review launcher into an:
+
+EXECUTIVE + OPERATIONAL SUMMARY
+
+The Dashboard should summarize the entire system.
+
+Remove:
+
+"Open a document for review"
+
+including:
+- document selector;
+- Open in Review button;
+- any dashboard-specific document navigation state.
+
+Specific document review remains available through:
+
+AFS Reports -> Document Review
+GIS Reports -> Document Review
+
+The Recent Document Queue may remain as an informational table.
+
+Do not make the Dashboard dependent on one selected document.
+
+==================================================
+2. ADD REPORT VIEW FILTER
+==================================================
+
+Add a compact Dashboard filter:
+
+Report View:
+
+- All Reports
+- AFS
+- GIS
+
+Default:
+All Reports
+
+This filter must affect:
+- summary cards;
+- dashboard charts;
+- recent document queue where practical.
+
+Do not modify stored document metadata.
+
+==================================================
+3. EXECUTIVE SUMMARY CARDS
+==================================================
+
+When Report View = All Reports, show:
+
+1. Total Reports
+2. AFS Reports
+3. GIS Reports
+4. Needs Review
+5. Accepted
+6. Reverted
+
+Use existing stored records only.
+
+Do not show AFS-only Extracted Figures as a primary All Reports metric.
+
+
+When Report View = AFS, show:
+
+1. AFS Reports
+2. Needs Review
+3. Accepted
+4. Reverted
+5. Extracted Figures
+6. Corrected Figures / Entries
+
+Reuse existing figure data.
+
+
+When Report View = GIS, show:
+
+1. GIS Reports
+2. Needs Review
+3. Accepted
+4. Reverted
+5. Completeness Issues
+6. Quality / Orientation Issues
+
+Only show GIS issue counts that can be derived safely from existing GIS validation results.
+
+If an issue metric cannot be reliably calculated from current data:
+show 0 or omit it with a clear empty state.
+
+Do not fabricate counts.
+
+==================================================
+4. RECENT DOCUMENT QUEUE
+==================================================
+
+Keep the Recent Document Queue as an informational system-wide table.
+
+Recommended columns:
+
+ID
+Company Name
+SEC Registration No.
+Report Type
+Period
+Submission Type
+Recommendation
+Source
+Uploaded At
+
+When:
+All Reports = selected
+show both AFS and GIS.
+
+When:
+AFS = selected
+show AFS only.
+
+When:
+GIS = selected
+show GIS only.
+
+Do NOT include an Open in Review control on the Dashboard.
+
+==================================================
+5. CHART 1 — REPORT DISTRIBUTION
+==================================================
+
+Add:
+
+Reports by Type
+
+Show:
+AFS
+GIS
+
+Use the current filtered dataset where appropriate.
+
+For All Reports this should clearly compare AFS vs GIS.
+
+Keep visualization simple and presentation-friendly.
+
+==================================================
+6. CHART 2 — REVIEW OUTCOMES
+==================================================
+
+Add:
+
+Review Outcomes by Report Type
+
+Use existing reviewer recommendation / disposition data.
+
+Categories where available:
+
+Needs Review
+Accepted
+Reverted
+No Final Recommendation / Pending
+
+Show outcomes grouped by:
+
+AFS
+GIS
+
+Do not infer an Accept/Revert decision from validation warnings.
+
+Only use saved/document review status already represented by the system.
+
+==================================================
+7. CHART 3 — TOP VALIDATION ISSUES
+==================================================
+
+Add:
+
+Top Validation Issues
+
+Aggregate existing validation results with:
+
+Warning
+Failed
+Needs Review
+
+where supported.
+
+Examples may include:
+
+AFS:
+- Completeness
+- Period Covered
+- Company/Profile
+- Orientation
+- Image Quality
+
+GIS:
+- GIS Completeness
+- Period Year
+- Period Covered
+- Company Name
+- SEC Registration Number
+- Image Quality
+- Orientation
+- Notarization Evidence
+
+Do NOT create new validation logic.
+
+This chart must summarize existing validation records only.
+
+For the seeded data, it is acceptable for some issue counts to be zero.
+
+==================================================
+8. REMOVE OLD AFS-ONLY DASHBOARD CHART
+==================================================
+
+The existing:
+
+Extraction Volume by Field
+
+chart is AFS-specific and should NOT appear in the default All Reports executive dashboard.
+
+When Report View = AFS:
+it may remain if already useful.
+
+When:
+All Reports or GIS
+
+do not show it.
+
+The existing Validation Summary chart may be replaced by the new executive charts if necessary.
+
+Keep the dashboard visually compact.
+
+==================================================
+9. DASHBOARD TEXT
+==================================================
+
+Change any AFS-only dashboard subtitle such as:
+
+"AFS intake, validation, and extraction overview..."
+
+to something broader, for example:
+
+"Executive overview of AFS and GIS intake, validation, and reviewer operations."
+
+Keep:
+
+Live DB Data
+
+or equivalent indication that dashboard metrics come from stored records.
+
+==================================================
+10. DO NOT IMPLEMENT YET
+==================================================
+
+Do NOT add in this iteration:
+
+- date-range filtering;
+- reviewer/personnel filtering;
+- reviewer productivity rankings;
+- average processing time;
+- backlog aging;
+- daily/monthly trend analytics;
+- GIS financial analytics;
+- historical GIS analytics;
+- new database fields;
+- new seeded documents;
+- new validation rules.
+
+These belong to later dashboard analytics iterations.
+
+==================================================
+11. REGRESSION TESTS
+==================================================
+
+Test:
+
+A. All Reports view
+Expected:
+AFS + GIS totals and records shown.
+
+B. AFS view
+Expected:
+AFS-only counts, queue, and AFS metrics.
+
+C. GIS view
+Expected:
+GIS-only counts, queue, and GIS metrics.
+
+D. Total Reports
+Expected:
+equals current stored document count.
+
+E. AFS + GIS count
+Expected:
+equals Total Reports.
+
+F. Recent queue filter
+Expected:
+matches selected Report View.
+
+G. Review outcome chart
+Expected:
+uses stored recommendations only.
+
+H. Validation issue chart
+Expected:
+uses existing validations only.
+
+I. Dashboard document selector
+Expected:
+removed.
+
+J. AFS Document Review
+Expected:
+unchanged.
+
+K. GIS Document Review
+Expected:
+unchanged.
+
+L. AFS Figures Extraction Review
+Expected:
+unchanged.
+
+M. Historical / Rankings
+Expected:
+unchanged.
+
+N. Existing 3 AFS + 1 GIS demo
+Expected:
+remain intact and protected.
+
+O. App startup
+Expected:
+no blocking errors.
+
+==================================================
+12. CREATE VALIDATION MD
+==================================================
+
+Create:
+
+docs/DASHBOARD_AFS_GIS_EXECUTIVE_SUMMARY_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. Exact files changed
+3. Dashboard filter behavior
+4. All Reports cards
+5. AFS cards
+6. GIS cards
+7. Recent Document Queue behavior
+8. Reports by Type chart
+9. Review Outcomes chart
+10. Validation Issues chart
+11. What old Dashboard controls/charts were removed
+12. Confirmation no metrics were fabricated
+13. Test results A-O:
+
+Scenario | Expected | Actual | Pass/Fail
+
+14. Database/schema impact
+15. Demo-data impact
+16. Known limitations
+
+Explicitly note that:
+
+- reviewer productivity analytics are not yet implemented;
+- date-range filtering is not yet implemented;
+- turnaround time/backlog aging are not yet implemented.
+
+Final assessment:
+
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+
+==================================================
+OUTPUT
+==================================================
+
+After implementation report:
+
+1. Exact files changed
+2. Final Dashboard sections
+3. Filter behavior
+4. Summary-card calculations
+5. Chart behavior
+6. Confirmation document opener was removed
+7. Test results A-O
+8. Confirmation existing AFS/GIS workflows remain intact
+9. Confirmation this file was created:
+
+docs/DASHBOARD_AFS_GIS_EXECUTIVE_SUMMARY_V1_VALIDATION.md
+
+10. Confirmation app runs successfully
+
+STOP after this scope.
