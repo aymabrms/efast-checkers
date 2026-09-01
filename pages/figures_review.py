@@ -135,7 +135,11 @@ def render():
             "retained and normalized peso values remain blank rather than being repaired automatically."
         )
 
-    available_years = sorted(df["fiscal_year"].dropna().astype(int).unique(), reverse=True)
+    available_years = sorted(
+        set(df["fiscal_year"].dropna().astype(int).unique())
+        | set(reporting_years),
+        reverse=True,
+    )
     year_options = ["All Years"] + [
         f"{year} — {'Current' if year == current_year else 'Comparative'}"
         for year in available_years
@@ -167,6 +171,13 @@ def render():
         metric_card("Current Revenue", rev_display, "Normalized peso value")
     with hero_cols[4]:
         metric_card("Needs Review", needs_review_count, "Rows pending reviewer action")
+
+    if view_df.empty:
+        st.info(
+            f"No extracted figures are available for fiscal year {selected_year_value}. "
+            "No comparative values were generated for this year."
+        )
+        return
 
     st.subheader(f"Extracted Figures Review Table — {document['company_name']}")
     st.caption(
@@ -206,6 +217,7 @@ def render():
         "normalized_label", "normalized_peso_value", "reviewer_edited",
     ]
     editable_view = editable[display_cols].copy()
+    editable_view["normalized_peso_value"] = editable_view["normalized_peso_value"].map(format_peso)
 
     edited = st.data_editor(
         editable_view,
@@ -219,9 +231,7 @@ def render():
             "fiscal_year": st.column_config.NumberColumn("Fiscal Year", disabled=True, width="small"),
             "year_role": st.column_config.TextColumn("Year Role", disabled=True, width="small"),
             "displayed_value": st.column_config.TextColumn("Displayed Value", disabled=True),
-            "normalized_peso_value": st.column_config.NumberColumn(
-                "Normalized (₱)", disabled=True, format="₱%.0f"
-            ),
+            "normalized_peso_value": st.column_config.TextColumn("Normalized (₱)", disabled=True),
             "conf_display": st.column_config.TextColumn("Computed Confidence", disabled=True, width="medium"),
             "review_status": st.column_config.SelectboxColumn(
                 "Review Status", options=[
@@ -346,12 +356,14 @@ def render():
     if bucket.empty:
         st.info("No safely normalized peso values are available for aggregation yet.")
     else:
+        bucket_display = bucket.copy()
+        bucket_display["Total (₱)"] = bucket_display["Total (₱)"].map(format_peso)
         st.dataframe(
-            bucket,
+            bucket_display,
             width="stretch",
             hide_index=True,
             column_config={
                 "Fiscal Year": st.column_config.NumberColumn("Fiscal Year", format="%d"),
-                "Total (₱)": st.column_config.NumberColumn("Total (₱)", format="₱%.0f"),
+                "Total (₱)": st.column_config.TextColumn("Total (₱)"),
             },
         )

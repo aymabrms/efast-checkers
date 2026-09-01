@@ -1,6 +1,6 @@
 import streamlit as st
 
-from config import AGENCY_NAME, APP_SUBTITLE, APP_TITLE
+from config import APP_SUBTITLE, APP_TITLE
 from db import init_db
 import pages.dashboard as dashboard
 import pages.document_review as document_review
@@ -33,9 +33,6 @@ def apply_styles():
         section[data-testid="stSidebar"] * { color: #ffffff !important; }
         [data-testid="stSidebarNav"] { display: none !important; }
         .main .block-container { padding-top: 1.5rem; max-width: 1440px; }
-        .app-hero { background: linear-gradient(135deg, #0f5b3f, #083627); color: #fff; padding: 1.35rem 1.5rem; border-radius: 18px; margin-bottom: 1.25rem; box-shadow: 0 18px 40px rgba(6, 53, 37, .16); }
-        .app-hero h1 { margin: 0; color: #fff; font-size: 2rem; letter-spacing: -0.02em; }
-        .app-hero p { margin: .35rem 0 0; color: #d9efe5; }
         .metric-card { background: #fff; border: 1px solid #dfe9e3; border-radius: 16px; padding: 1rem; min-height: 122px; box-shadow: 0 10px 24px rgba(19, 42, 31, .07); }
         .metric-label { color: #587267; font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
         .metric-value { color: #103f2d; font-size: 1.55rem; font-weight: 800; margin-top: .3rem; line-height: 1.15; }
@@ -63,17 +60,8 @@ def main():
     st.set_page_config(page_title=APP_TITLE, layout="wide")
     apply_styles()
     bootstrap()
-    st.markdown(
-        f"""
-        <div class="app-hero">
-            <h1>{APP_TITLE}</h1>
-            <p>{APP_SUBTITLE} · {AGENCY_NAME}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
     st.sidebar.title(APP_TITLE)
-    st.sidebar.caption("Philippine AFS QA dashboard prototype")
+    st.sidebar.caption(APP_SUBTITLE)
 
     # Support programmatic navigation (e.g. "Open in Review" from Dashboard)
     nav_to = st.session_state.pop("_nav_to", None)

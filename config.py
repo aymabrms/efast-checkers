@@ -1,7 +1,7 @@
 from pathlib import Path
 
 APP_TITLE = "SEC eFAST Checkers"
-APP_SUBTITLE = "AFS Validation and Figure Extraction MVP"
+APP_SUBTITLE = "GIS & AFS Reviewer Assistance Prototype"
 AGENCY_NAME = "Securities and Exchange Commission"
 DEFAULT_COMPANY = "Audentia Fortuna Holdings, Inc."
 DEFAULT_REPORT_TYPE = "AFS"

@@ -101,42 +101,27 @@ def show_document_selector(documents: List[Dict], key: str) -> Optional[int]:
 
 
 def reviewing_banner(document: Optional[Dict]) -> None:
-    """Render a persistent 'Currently Reviewing' info card."""
+    """Render a persistent 'Currently Reviewing' card using native Streamlit layout."""
     if not document:
         st.info("No document is currently selected. Use the selector below or open a document from the Dashboard.")
         return
     report_type = str(document.get("report_type") or "—")
-    extra_fields = ""
+    fields = [
+        ("Company", document.get("company_name", "—")),
+        ("SEC Registration No.", document.get("sec_registration_no", "—")),
+        ("Period", document.get("period_covered_year", "—")),
+        ("Report Type", report_type),
+        ("Submission", document.get("submission_type", "—")),
+    ]
     if report_type.upper() == "GIS":
-        extra_fields = f"""
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">Corporation Type</span>&nbsp;{html.escape(str(document.get('corporation_type') or '—'))}
-            </div>
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">Period Covered</span>&nbsp;{html.escape(str(document.get('period_covered') or '—'))}
-            </div>
-        """
-    st.markdown(
-        f"""
-        <div style="background:#e8f5ee;border:1.5px solid #0f5b3f;border-radius:14px;padding:.85rem 1.2rem;margin-bottom:1rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;">
-            <div>
-                <div style="font-size:.72rem;font-weight:700;color:#587267;text-transform:uppercase;letter-spacing:.08em;">Currently Reviewing</div>
-                <div style="font-size:1.05rem;font-weight:800;color:#0f5b3f;margin-top:.15rem;">{html.escape(str(document.get('company_name','—')))}</div>
-            </div>
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">SEC Reg No.</span>&nbsp;{html.escape(str(document.get('sec_registration_no','—')))}
-            </div>
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">Period</span>&nbsp;{html.escape(str(document.get('period_covered_year','—')))}
-            </div>
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">Report Type</span>&nbsp;{html.escape(str(document.get('report_type','—')))}
-            </div>
-            {extra_fields}
-            <div style="color:#587267;font-size:.82rem;">
-                <span style="font-weight:700;color:#103f2d;">Submission</span>&nbsp;{html.escape(str(document.get('submission_type','—')))}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        fields[2:2] = [
+            ("Corporation Type", document.get("corporation_type", "—")),
+            ("Period Covered", document.get("period_covered", "—")),
+        ]
+    with st.container(border=True):
+        st.caption("Currently Reviewing")
+        columns = st.columns([2.2] + [1.15] * (len(fields) - 1))
+        for column, (label, value) in zip(columns, fields):
+            with column:
+                st.caption(label)
+                st.write(value if value not in (None, "") else "—")

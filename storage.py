@@ -11,6 +11,7 @@ from db import (
     replace_document_analysis,
     save_reviewer_action,
 )
+from extraction_engine import extract_figures_from_pages, fiscal_year_candidates
 
 
 def load_json(path: Path):
@@ -104,6 +105,60 @@ def seed_company_master() -> None:
     )
 
 
+def _backfill_demo_comparative_figures(document_id: int, metadata: Dict) -> None:
+    """Persist only comparative rows explicitly recoverable from seeded page text."""
+    pages = get_pages(document_id)
+    existing_figures = get_figures(document_id)
+    existing_keys = {
+        (str(row.get("normalized_label") or ""), int(row["fiscal_year"]))
+        for row in existing_figures
+        if row.get("fiscal_year") is not None
+    }
+    normalized_by_raw_label = {
+        str(row.get("raw_label") or "").strip().lower(): str(row.get("normalized_label") or "")
+        for row in existing_figures
+        if row.get("raw_label") and row.get("normalized_label")
+    }
+    current_year = int(metadata.get("period_covered_year") or 0)
+    for figure in extract_figures_from_pages(pages, fiscal_year_candidates(metadata)):
+        fiscal_year = figure.get("fiscal_year")
+        if not fiscal_year or int(fiscal_year) >= current_year:
+            continue
+        normalized_label = normalized_by_raw_label.get(
+            str(figure.get("raw_label") or "").strip().lower(),
+            str(figure.get("normalized_label") or ""),
+        )
+        key = (normalized_label, int(fiscal_year))
+        if not key or key in existing_keys:
+            continue
+        execute(
+            """
+            INSERT INTO extracted_figures (
+                document_id, page_number, statement_type, raw_label, normalized_label,
+                fiscal_year, displayed_value, normalized_peso_value, unit_basis,
+                source_snippet, reviewer_edited, reviewed_value, review_status, confidence
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+            """,
+            (
+                document_id,
+                figure.get("page_number"),
+                figure.get("statement_type"),
+                figure.get("raw_label"),
+                normalized_label,
+                fiscal_year,
+                figure.get("displayed_value"),
+                figure.get("normalized_peso_value"),
+                figure.get("unit_basis"),
+                figure.get("source_snippet"),
+                "",
+                figure.get("review_status") or figure.get("status", "Needs Review"),
+                figure.get("confidence", 0.8),
+            ),
+        )
+        existing_keys.add(key)
+
+
 def _seed_one_demo_document(entry: Dict) -> int:
     """
     Seed a single demo suite entry. Guards against overwriting existing analysis
@@ -122,6 +177,7 @@ def _seed_one_demo_document(entry: Dict) -> int:
             (document_id,),
         )
         if has_analysis:
+            _backfill_demo_comparative_figures(document_id, metadata)
             return document_id
     else:
         document_id = insert_document(metadata)
@@ -136,6 +192,7 @@ def _seed_one_demo_document(entry: Dict) -> int:
             "detected_period_match": str(metadata["period_covered_year"]) in text,
         })
     replace_document_analysis(document_id, pages, entry["validations"], entry["figures"])
+    _backfill_demo_comparative_figures(document_id, metadata)
 
     existing_action = query(
         "SELECT id FROM reviewer_actions WHERE document_id = ?", (document_id,)
@@ -168,6 +225,7 @@ def ensure_demo_document() -> int:
             "SELECT 1 FROM page_analysis WHERE document_id = ? LIMIT 1", (document_id,)
         )
         if has_analysis:
+            _backfill_demo_comparative_figures(document_id, metadata)
             return document_id
     else:
         document_id = insert_document(metadata)
@@ -181,6 +239,7 @@ def ensure_demo_document() -> int:
             "detected_period_match": str(metadata["period_covered_year"]) in text,
         })
     replace_document_analysis(document_id, pages, demo["sample_validations"], demo["sample_figures"])
+    _backfill_demo_comparative_figures(document_id, metadata)
     return document_id
 
 

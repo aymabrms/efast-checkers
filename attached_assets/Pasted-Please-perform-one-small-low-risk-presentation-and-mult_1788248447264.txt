@@ -1,0 +1,219 @@
+Please perform one small, low-risk presentation and multi-year display cleanup on the existing SEC eFAST Checkers prototype.
+
+IMPORTANT:
+- Inspect the current implementation first.
+- Do not redesign the application.
+- Do not change GIS business rules, AFS completeness rules, OCR, confidence/HITL, reviewer disposition, database schema, Historical View, Rankings, or BOD behavior unless explicitly required below.
+- Do not add dependencies.
+- Preserve the three seeded demo documents.
+- Keep this credit-thrift.
+- Create a validation MD after completion.
+- Stop after this scope.
+
+==================================================
+1. REMOVE REDUNDANT MAIN BRAND BANNER
+==================================================
+
+The large dark-green banner at the top of every main page currently repeats:
+
+SEC eFAST Checkers
+AFS Validation and Figure Extraction MVP · Securities and Exchange Commission
+
+Remove this large repeated hero/banner from the main content area.
+
+Keep the system branding in the sidebar.
+
+Each page should begin directly with its own title, for example:
+
+Dashboard
+Upload / Intake
+Document Review
+AFS Figures Extraction Review
+Historical Company View
+Rankings / Research View
+
+Do not remove normal page titles.
+
+Goal:
+recover vertical space and reduce redundant branding.
+
+==================================================
+2. UPDATE SIDEBAR SYSTEM DESCRIPTION
+==================================================
+
+Replace:
+
+Philippine AFS QA dashboard prototype
+
+with:
+
+GIS & AFS Reviewer Assistance Prototype
+
+Do not use "Philippine" in this subtitle.
+
+Do not rename the main system:
+
+SEC eFAST Checkers
+
+No logo is required in this task.
+
+==================================================
+3. FIX RAW HTML DISPLAY
+==================================================
+
+There is a current UI defect where raw HTML is visibly printed inside the Currently Reviewing banner, for example:
+
+<div style="color:#587267;font-size:.82rem;">
+...
+Submission
+...
+</div>
+
+This appears in Document Review and AFS Figures Extraction Review.
+
+Inspect the shared Currently Reviewing helper, likely in ui_helpers.py or its current equivalent.
+
+Fix this so no HTML markup is ever visible to the reviewer.
+
+Preferred approach:
+use native Streamlit layout/text components such as:
+- st.container
+- st.columns
+- st.caption
+- st.markdown with normal Markdown
+
+Avoid relying on unsafe HTML if native Streamlit can render the same information.
+
+The Currently Reviewing section should cleanly show:
+
+Company
+SEC Registration No.
+Period
+Report Type
+Submission
+
+and GIS-specific metadata where already supported.
+
+==================================================
+4. FIX MULTI-YEAR FIGURES DISPLAY
+==================================================
+
+Current issue:
+
+AFS Figures Extraction Review may display:
+
+Reporting Years: 2025 · 2024 · 2023
+View Fiscal Year: All Years
+
+but the Extracted Figures Review Table and Normalized Figure Buckets show only Current / 2025 rows.
+
+Inspect the current data first and determine whether this is:
+
+A. seeded demo figures missing comparative rows, or
+B. a display/filter issue.
+
+Do NOT guess and do NOT invent comparative values.
+
+When source/demo evidence contains valid comparative values:
+
+Extracted Figures Review Table must show separate rows per fiscal year.
+
+Example structure:
+
+Raw Label
+Fiscal Year
+Year Role
+Displayed Value
+Computed Confidence
+Review Status
+Reviewed / Corrected Value
+Normalized Label
+Normalized (₱)
+
+Year Role:
+- Current
+- Comparative
+
+When View Fiscal Year = All Years:
+show all available extracted years.
+
+When a specific year is selected:
+show only that year.
+
+Normalized Figure Buckets must likewise distinguish:
+
+Field
+Fiscal Year
+Year Role
+Total (₱)
+
+If a selected/reporting year has no actually extracted figures:
+do not generate values.
+Show an appropriate empty/no-extracted-figures state for that year.
+
+Keep the Current Revenue summary card based on the current period year only.
+
+==================================================
+5. DISPLAY-ONLY FINANCIAL FORMATTING
+==================================================
+
+Where safe and presentation-only, format displayed peso values with:
+
+- comma separators
+- two decimal places
+
+Example:
+
+₱1,248,900,000.00
+
+Do not change stored numeric values.
+
+Do not convert values to billions.
+
+==================================================
+6. REGRESSION SAFETY
+==================================================
+
+Verify:
+
+A. Dashboard still works.
+B. Upload / Intake AFS and GIS modes still work.
+C. AFS Completeness Check remains unchanged.
+D. GIS Review Lite remains unchanged.
+E. OCR Text Layer / OCR Fallback traceability remains unchanged.
+F. Computed Confidence + HITL remains unchanged.
+G. Reviewer Disposition remains human-controlled.
+H. AFS Figures Review corrections still save.
+I. Fiscal-year filtering works.
+J. Three seeded demo documents remain intact.
+K. App runs without visible raw HTML.
+
+==================================================
+7. VALIDATION FILE
+==================================================
+
+Create:
+
+docs/PRESENTATION_POLISH_MULTIYEAR_DISPLAY_V1_VALIDATION.md
+
+Include:
+
+1. Exact files changed
+2. Banner removal result
+3. Sidebar subtitle change
+4. Raw HTML root cause and fix
+5. Multi-year figure-display root cause
+6. Whether seeded demo data required adjustment
+7. Confirmation no comparative figure was invented
+8. All Years behavior
+9. Specific-year filter behavior
+10. Normalized Figure Buckets behavior
+11. Peso display formatting
+12. Regression test results A-K
+13. Known limitations
+14. Final assessment:
+   - Safe for prototype testing
+   - Needs minor refinement
+   - Requires correction
+
+STOP after this scope.
