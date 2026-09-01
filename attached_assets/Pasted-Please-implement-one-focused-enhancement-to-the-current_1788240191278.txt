@@ -1,0 +1,462 @@
+Please implement one focused enhancement to the current SEC eFAST Checkers prototype:
+
+NLP-ASSISTED EVIDENCE EXTRACTION V1
+
+IMPORTANT:
+- Inspect the existing code first
+- Keep this low-risk and low-credit
+- Do NOT redesign the UI
+- Do NOT add a trained NLP model, LLM, external API, vector database, ML classifier, or background worker
+- Do NOT modify GIS, Historical View, Rankings, demo seeding, final reviewer disposition, Multi-Year AFS Support, Computed Confidence weights, Test Upload Management, or OCR behavior except for small compatibility integration
+- Preserve the corrected AFS Completeness business rules
+- Generate the requested validation MD file
+- Stop after this scope
+
+GOAL
+
+Add a lightweight NLP-assisted evidence layer that recognizes common wording variations in AFS text extracted from either:
+
+- PDF Text Layer
+- OCR Fallback
+
+The NLP layer should improve evidence recognition while keeping all final validation decisions deterministic and explainable.
+
+--------------------------------------------------
+1. VERIFY SPACY AVAILABILITY FIRST
+--------------------------------------------------
+
+Check whether spaCy is already available in the Replit environment.
+
+If available:
+- use it.
+
+If not:
+- add only the minimal spaCy dependency needed for this prototype.
+
+Do NOT download a large pretrained model such as:
+- en_core_web_sm
+- transformer models
+
+Preferred approach:
+
+spacy.blank("en")
+PhraseMatcher
+Matcher
+
+If spaCy cannot be installed cleanly without major environment changes:
+- stop implementation
+- generate the validation MD documenting the blocker.
+
+--------------------------------------------------
+2. CREATE ONE SHARED NLP EVIDENCE MODULE
+--------------------------------------------------
+
+Create a small reusable module, for example:
+
+nlp_evidence.py
+
+Use:
+
+- spaCy blank English pipeline
+- PhraseMatcher for known terminology / aliases
+- Matcher where token-order patterns are useful
+
+Do not scatter NLP logic across many page modules.
+
+The module should return deterministic evidence such as:
+
+{
+  "concept": "STATEMENT_CASH_FLOWS",
+  "matched_text": "Cash Flow Statement",
+  "start": ...,
+  "end": ...,
+  "rule": "phrase_alias"
+}
+
+Keep it simple.
+
+--------------------------------------------------
+3. SUPPORT AFS STATEMENT VARIATIONS
+--------------------------------------------------
+
+Create configurable phrase groups for the existing required AFS concepts.
+
+Examples:
+
+MANAGEMENT_RESPONSIBILITY
+- Statement of Management's Responsibility
+- Statement of Management Responsibility
+- Management's Responsibility for Financial Statements
+
+AUDITOR_REPORT
+- Independent Auditor's Report
+- Independent Auditors' Report
+- Report of Independent Auditor
+
+FINANCIAL_POSITION
+- Statement of Financial Position
+- Statements of Financial Position
+- Balance Sheet
+
+INCOME
+- Statement of Income
+- Statements of Income
+- Income Statement
+- Statement of Profit or Loss
+- Statements of Profit or Loss
+
+COMPREHENSIVE_INCOME
+- Statement of Comprehensive Income
+- Statements of Comprehensive Income
+- Other Comprehensive Income
+- Profit or Loss and Other Comprehensive Income
+
+CHANGES_IN_EQUITY
+- Statement of Changes in Equity
+- Statements of Changes in Equity
+- Changes in Shareholders' Equity
+- Statement of Changes in Fund Balance where already relevant
+
+CASH_FLOWS
+- Statement of Cash Flows
+- Statements of Cash Flows
+- Cash Flow Statement
+
+NOTES
+- Notes to Financial Statements
+- Notes to the Financial Statements
+- Notes Forming Part of the Financial Statements where appropriate
+
+Do not change the underlying list of required AFS components.
+
+--------------------------------------------------
+4. PRESERVE COMPLETENESS FALSE-POSITIVE SAFEGUARD
+--------------------------------------------------
+
+VERY IMPORTANT:
+
+The previously corrected business rule must remain:
+
+REFERENCE TEXT DOES NOT EQUAL ACTUAL COMPONENT PRESENCE.
+
+A page classified as:
+
+Independent Auditor's Report
+
+must NOT satisfy these components merely because its narrative mentions them:
+
+- Financial Position
+- Income
+- Comprehensive Income
+- Changes in Equity
+- Cash Flows
+
+The new NLP matcher must respect the same exclusion.
+
+Do NOT reintroduce the previously fixed Auditor's Report false positive.
+
+--------------------------------------------------
+5. PERIOD / DATE EVIDENCE
+--------------------------------------------------
+
+Use lightweight token or deterministic patterns to recognize common reporting-period wording variations.
+
+Examples:
+
+- for the year ended December 31, 2025
+- for the fiscal year ended December 31, 2025
+- for the year ended 31 December 2025
+- as at December 31, 2025
+- as of December 31, 2025
+- December 31, 2025 and 2024
+
+The NLP layer should return candidate years / date phrases.
+
+Do NOT replace existing Period Covered business rules yet.
+
+Instead:
+- provide normalized evidence to the existing period checker.
+
+Example normalized evidence:
+
+{
+  "type": "REPORTING_PERIOD",
+  "text": "for the year ended 31 December 2025",
+  "years": [2025]
+}
+
+Multi-Year AFS Support must continue to determine which years are selected/current/comparative.
+
+--------------------------------------------------
+6. COMPANY-NAME EVIDENCE
+--------------------------------------------------
+
+Do NOT replace the existing fuzzy company-name matcher.
+
+Instead:
+
+- use tokenization to improve company-name evidence extraction where safe;
+- normalize punctuation, repeated spaces, and common corporate suffix presentation differences such as:
+  Inc.
+  Inc
+  Incorporated
+  Corp.
+  Corp
+  Corporation
+
+The final company-match decision must remain with the existing deterministic/fuzzy validation logic.
+
+Do not attempt named-entity recognition using a pretrained model.
+
+--------------------------------------------------
+7. FINANCIAL-LABEL EVIDENCE
+--------------------------------------------------
+
+Use the NLP phrase layer to support configured variations for financial labels already present in:
+
+label_mapping.json
+
+Examples may include:
+
+- Cash and Cash Equivalents
+- Cash & Cash Equivalents
+- Total Assets
+- Total Liabilities
+- Total Equity
+- Gross Revenue
+- Total Revenue
+- Net Sales
+- Net Income
+- Net Loss
+- Net Cash Provided by Operating Activities
+
+Do NOT create new accounting equivalences merely because phrases look similar.
+
+The existing normalized-label/business mapping remains authoritative.
+
+The NLP layer should help recognize aliases only.
+
+--------------------------------------------------
+8. TEXT SOURCE COMPATIBILITY
+--------------------------------------------------
+
+Run the same NLP evidence logic on the effective page text regardless of whether:
+
+Text Source = Text Layer
+
+or
+
+Text Source = OCR Fallback
+
+Do not create separate OCR NLP rules.
+
+Preserve:
+- original_text
+- ocr_text
+- extraction_source
+
+--------------------------------------------------
+9. PAGE CLASSIFICATION INTEGRATION
+--------------------------------------------------
+
+Use NLP evidence to SUPPLEMENT the current page classifier.
+
+Preferred behavior:
+
+Current keyword/page-type evidence
++
+NLP phrase evidence
+=
+stronger deterministic classification evidence
+
+Do not replace the classifier with a black-box score.
+
+If existing classification and NLP evidence conflict:
+- preserve the current classification for V1;
+- flag or expose the conflicting evidence if easy;
+- do not automatically reclassify using an opaque rule.
+
+--------------------------------------------------
+10. REVIEWER VISIBILITY
+--------------------------------------------------
+
+Keep UI changes small.
+
+In Document Review, add a compact optional expander such as:
+
+"NLP Evidence"
+
+For the selected/open page, show recognized evidence such as:
+
+- Statement Type: Cash Flow Statement
+  → Normalized Concept: Statement of Cash Flows
+
+- Reporting Period:
+  → 2025
+
+- Company Evidence:
+  → Audentia Fortuna Holdings, Inc.
+
+Only display this where evidence exists.
+
+Add a short note:
+
+"NLP-assisted evidence uses deterministic phrase/token matching in this prototype; no trained language model is used."
+
+Do not clutter the main Page Review layout.
+
+--------------------------------------------------
+11. COMPUTED CONFIDENCE
+--------------------------------------------------
+
+Do NOT redesign the current confidence formula in this iteration.
+
+If the existing Financial Label Match factor can safely recognize an NLP-confirmed configured alias as the existing alias score, that is acceptable.
+
+Do not add arbitrary confidence points simply because NLP ran.
+
+Confidence must remain explainable and deterministic.
+
+--------------------------------------------------
+12. TEST SCENARIOS
+--------------------------------------------------
+
+Test:
+
+A. Exact existing statement title
+Expected:
+recognized normally.
+
+B. "Cash Flow Statement"
+Expected:
+normalized to Statement of Cash Flows evidence.
+
+C. "Statements of Financial Position"
+Expected:
+recognized as Financial Position evidence.
+
+D. Combined:
+"Statement of Profit or Loss and Other Comprehensive Income"
+Expected:
+Income and OCI evidence both recognized.
+
+E. Auditor's Report narrative mentions:
+financial position, income, comprehensive income,
+changes in equity, cash flows
+
+Expected:
+does NOT count as actual presence of those components.
+
+F. Period:
+"for the fiscal year ended 31 December 2025"
+Expected:
+candidate reporting year 2025 recognized.
+
+G. Comparative wording:
+"December 31, 2025 and 2024"
+Expected:
+2025 and 2024 recognized as candidate years.
+
+H. Company punctuation variation:
+"AUDENTIA FORTUNA HOLDINGS INC"
+versus
+"Audentia Fortuna Holdings, Inc."
+
+Expected:
+normalized evidence supports existing company matcher.
+
+I. OCR-derived text containing a supported variation
+Expected:
+same NLP evidence extraction works.
+
+J. Unsupported/ambiguous phrase
+Expected:
+no invented concept.
+
+K. Existing three demo documents
+Expected:
+remain intact.
+
+L. AFS Completeness Check
+Expected:
+previous false-positive fix remains correct.
+
+M. Multi-Year AFS
+Expected:
+current/comparative year behavior remains intact.
+
+N. Computed Confidence + HITL
+Expected:
+still operates and final disposition remains human-controlled.
+
+--------------------------------------------------
+13. CREATE VALIDATION MD
+--------------------------------------------------
+
+Create:
+
+docs/NLP_ASSISTED_EVIDENCE_EXTRACTION_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. NLP approach used
+3. spaCy/environment status
+4. Exact files changed
+5. PhraseMatcher / Matcher concepts implemented
+6. AFS statement variations
+7. Period/date evidence behavior
+8. Company-name evidence behavior
+9. Financial-label evidence behavior
+10. OCR compatibility
+11. Page-classification integration
+12. Auditor-report false-positive safeguard
+13. Confidence compatibility
+14. Reviewer-facing NLP evidence behavior
+15. Test results A-N:
+
+Scenario | Expected | Actual | Pass/Fail
+
+16. Demo-data impact
+17. Database/schema impact
+18. Known limitations
+
+19. Explicit confirmation:
+- no trained NLP model
+- no LLM
+- no ML classifier
+- no external NLP API
+- NLP evidence is deterministic
+- final validation remains rule-based/HITL
+
+20. Final assessment:
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+- spaCy environment unavailable
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Whether spaCy is available
+2. Exact NLP approach used
+3. Exact files changed
+4. Concepts/variations supported
+5. Test results A-N
+6. Any schema/database change
+7. Confirmation OCR fallback still works
+8. Confirmation AFS Completeness safeguard still works
+9. Confirmation Multi-Year Support still works
+10. Confirmation Computed Confidence + HITL still works
+11. Confirmation Test Upload Management still works
+12. Confirmation demos remain intact
+13. Confirmation this file was created:
+
+docs/NLP_ASSISTED_EVIDENCE_EXTRACTION_V1_VALIDATION.md
+
+14. Confirmation app still runs
+
+STOP after this scope.
