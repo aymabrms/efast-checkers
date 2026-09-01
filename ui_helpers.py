@@ -105,6 +105,17 @@ def reviewing_banner(document: Optional[Dict]) -> None:
     if not document:
         st.info("No document is currently selected. Use the selector below or open a document from the Dashboard.")
         return
+    report_type = str(document.get("report_type") or "—")
+    extra_fields = ""
+    if report_type.upper() == "GIS":
+        extra_fields = f"""
+            <div style="color:#587267;font-size:.82rem;">
+                <span style="font-weight:700;color:#103f2d;">Corporation Type</span>&nbsp;{html.escape(str(document.get('corporation_type') or '—'))}
+            </div>
+            <div style="color:#587267;font-size:.82rem;">
+                <span style="font-weight:700;color:#103f2d;">Period Covered</span>&nbsp;{html.escape(str(document.get('period_covered') or '—'))}
+            </div>
+        """
     st.markdown(
         f"""
         <div style="background:#e8f5ee;border:1.5px solid #0f5b3f;border-radius:14px;padding:.85rem 1.2rem;margin-bottom:1rem;display:flex;gap:2.5rem;align-items:center;flex-wrap:wrap;">
@@ -121,6 +132,7 @@ def reviewing_banner(document: Optional[Dict]) -> None:
             <div style="color:#587267;font-size:.82rem;">
                 <span style="font-weight:700;color:#103f2d;">Report Type</span>&nbsp;{html.escape(str(document.get('report_type','—')))}
             </div>
+            {extra_fields}
             <div style="color:#587267;font-size:.82rem;">
                 <span style="font-weight:700;color:#103f2d;">Submission</span>&nbsp;{html.escape(str(document.get('submission_type','—')))}
             </div>

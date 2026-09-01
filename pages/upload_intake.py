@@ -1,3 +1,5 @@
+from datetime import date
+
 import streamlit as st
 
 from config import DEFAULT_COMPANY, DEFAULT_FILING_YEAR, DEFAULT_PERIOD_YEAR, DEFAULT_REPORT_TYPE, DEFAULT_SUBMISSION_TYPE, UPLOADS_DIR
@@ -18,36 +20,66 @@ from validation_engine import analyze_pages, validate_document
 
 def render():
     st.header("Upload / Intake")
-    st.caption("Register AFS metadata, upload a PDF, or load the fictional demonstration case.")
+    st.caption("Register AFS or GIS metadata, upload a PDF, or load the fictional demonstration case.")
 
-    uploaded = st.file_uploader("AFS PDF", type=["pdf"])
+    uploaded = st.file_uploader("AFS / GIS PDF", type=["pdf"])
     col1, col2 = st.columns(2)
     with col1:
         company_name = st.text_input("Company Name", DEFAULT_COMPANY)
         sec_no = st.text_input("SEC Registration Number", "")
-        report_type = st.text_input("Report Type", DEFAULT_REPORT_TYPE)
-        period_year = st.number_input(
-            "Period Covered Year",
-            min_value=2000,
-            max_value=2100,
-            value=DEFAULT_PERIOD_YEAR,
-            step=1,
-        )
-        comparative_included = st.radio(
-            "Comparative Figures Included?",
-            ["No", "Yes"],
-            horizontal=True,
-            help="Choose No for a current-period-only AFS.",
-        )
+        report_type = st.selectbox("Report Type", ["AFS", "GIS"], index=0)
+        if report_type == "AFS":
+            period_year = st.number_input(
+                "Period Covered Year",
+                min_value=2000,
+                max_value=2100,
+                value=DEFAULT_PERIOD_YEAR,
+                step=1,
+            )
+            corporation_type = ""
+            period_covered = None
+            comparative_included = st.radio(
+                "Comparative Figures Included?",
+                ["No", "Yes"],
+                horizontal=True,
+                help="Choose No for a current-period-only AFS.",
+            )
+        else:
+            corporation_type = st.selectbox("Corporation Type", ["Stock", "Non-Stock"])
+            period_year = st.number_input(
+                "Period Year",
+                min_value=2000,
+                max_value=2100,
+                value=DEFAULT_PERIOD_YEAR,
+                step=1,
+            )
+            period_covered = st.date_input(
+                "Period Covered",
+                value=date(int(period_year), 12, 31),
+                key="gis_period_covered",
+            )
+            comparative_included = "No"
     with col2:
-        submission_type = st.text_input("Submission Type", DEFAULT_SUBMISSION_TYPE)
-        filing_year = st.number_input(
-            "Filing Year",
-            min_value=2000,
-            max_value=2100,
-            value=DEFAULT_FILING_YEAR,
-            step=1,
-        )
+        if report_type == "AFS":
+            submission_type = st.text_input("Submission Type", DEFAULT_SUBMISSION_TYPE)
+            filing_year = st.number_input(
+                "Filing Year",
+                min_value=2000,
+                max_value=2100,
+                value=DEFAULT_FILING_YEAR,
+                step=1,
+            )
+        else:
+            submission_type = st.selectbox(
+                "Submission Type",
+                [
+                    "Annual Meeting",
+                    "Special Meeting",
+                    "Amendment / Amended GIS",
+                    "No Meeting / Non-Holding of Annual Meeting",
+                ],
+            )
+            filing_year = None
         comparative_count = 0
         comparative_year_1 = None
         comparative_year_2 = None
@@ -98,7 +130,9 @@ def render():
                     "period_covered_year": int(period_year),
                     "comparative_years": ", ".join(str(year) for year in selected_comparative_years),
                     "submission_type": submission_type,
-                    "filing_year": int(filing_year),
+                    "filing_year": int(filing_year) if filing_year else None,
+                    "corporation_type": corporation_type,
+                    "period_covered": period_covered.isoformat() if period_covered else None,
                 }
                 document_id = insert_document(metadata)
                 saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
@@ -111,10 +145,26 @@ def render():
                 if raw_pages:
                     pages = analyze_pages(raw_pages, metadata, company_master)
                     validations = validate_document(pages, metadata, company_master)
-                    figures = extract_figures_from_pages(pages, fiscal_year_candidates(metadata))
+                    figures = (
+                        []
+                        if report_type == "GIS"
+                        else extract_figures_from_pages(pages, fiscal_year_candidates(metadata))
+                    )
                     low_text = any(page.get("image_quality_flag") in ("Warning", "Failed") for page in pages)
                     has_check_source = any(row.get("status") == "Check Source" for row in figures)
-                    if low_text:
+                    if report_type == "GIS":
+                        analysis_outcome = "GIS Review Lite Analysis Completed"
+                        outcome_message = (
+                            "GIS pages, content-based component evidence, meeting-period checks, "
+                            "and reviewer-assistance rules were completed."
+                        )
+                        st.success(f"**{analysis_outcome}** — {outcome_message}")
+                        if low_text:
+                            st.warning(
+                                "One or more GIS pages have low extracted text. Review the Text Layer/OCR source "
+                                "and page quality signals in Document Review."
+                            )
+                    elif low_text:
                         analysis_outcome = "Possible Scanned / Low-Text PDF"
                         outcome_message = (
                             "Real PDF pages were analyzed, but one or more pages have low extracted text. "
@@ -134,9 +184,9 @@ def render():
                         analysis_outcome = "Real PDF Analysis Completed"
                         outcome_message = "Real PDF pages, validations, and supported figure extraction were completed."
                         st.success(f"**{analysis_outcome}** — {outcome_message}")
-                    if not figures:
+                    if report_type == "AFS" and not figures:
                         st.warning("No supported financial figures were reliably extracted from this document.")
-                    elif has_check_source:
+                    elif report_type == "AFS" and has_check_source:
                         st.warning(
                             "Some extracted values have ambiguous numeric formatting. Original raw values were retained; "
                             "normalized peso values are blank until the reviewer verifies the source."
@@ -153,7 +203,10 @@ def render():
 
                 validations.append({
                     "rule_name": "PDF analysis outcome",
-                    "status": "Passed" if analysis_outcome == "Real PDF Analysis Completed" else "Needs Review",
+                    "status": "Passed" if analysis_outcome in (
+                        "Real PDF Analysis Completed",
+                        "GIS Review Lite Analysis Completed",
+                    ) else "Needs Review",
                     "message": f"{analysis_outcome}. {outcome_message}",
                     "suggested_revert_reason": (
                         "Poor image quality"

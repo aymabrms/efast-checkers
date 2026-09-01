@@ -3,14 +3,17 @@ import html as html_lib
 import pandas as pd
 import streamlit as st
 
-from db import save_reviewer_action
+from db import save_reviewer_action, update_gis_bod_routing
 from pdf_utils import quality_label
 from storage import get_document, get_documents, get_pages, get_reviewer_actions, get_validations, load_revert_reasons
 from ui_helpers import highlight_terms, render_status, reviewing_banner, show_document_selector, status_badge
 from validation_engine import (
     evaluate_afs_completeness,
     evaluate_bir_filing,
+    evaluate_gis_completeness,
+    evaluate_gis_bod,
     final_recommendation,
+    is_gis_submission,
     is_afs_submission,
     suggested_revert_reason,
 )
@@ -132,6 +135,83 @@ def _render_afs_completeness_check(pages, document):
     st.caption(bir["note"])
 
 
+def _render_gis_completeness_check(pages, document):
+    completeness = evaluate_gis_completeness(pages, document.get("corporation_type") or "Stock")
+    bod = evaluate_gis_bod(pages)
+    st.subheader("GIS Completeness Check")
+    if completeness["status"] == "Passed":
+        st.success(completeness["message"])
+    else:
+        st.error(completeness["message"])
+
+    rows = []
+    for item in completeness["components"]:
+        label = item["component"]
+        if label == "Annex A / Primary Purpose":
+            label += " (Optional)"
+        elif label == "Beneficial Ownership Declaration":
+            label += " (Conditional / Legacy)"
+        elif not item.get("required"):
+            label += " (Optional)"
+        rows.append({
+            "Component": label,
+            "Status": item["status"],
+            "Detected Page(s)": item["detected_pages"],
+        })
+    status_styles = {
+        "Detected": ("#d9f7e8", "#0f6b43"),
+        "Missing": ("#fde8e8", "#b91c1c"),
+        "Needs Review": ("#fff7d9", "#856404"),
+        "Not Present": ("#f5f5f5", "#666"),
+        "Not Detected": ("#f5f5f5", "#666"),
+        "Not Applicable / Accepted QA Copy": ("#e8eef7", "#1a3a6b"),
+    }
+    table_rows = []
+    for row in rows:
+        bg, fg = status_styles.get(row["Status"], ("#f5f5f5", "#333"))
+        table_rows.append(
+            "<tr>"
+            f"<td>{html_lib.escape(row['Component'])}</td>"
+            f"<td><span style='background:{bg};color:{fg};border-radius:999px;padding:.18rem .55rem;font-weight:700;font-size:.78rem;'>{html_lib.escape(row['Status'])}</span></td>"
+            f"<td>{html_lib.escape(row['Detected Page(s)'])}</td>"
+            "</tr>"
+        )
+    st.markdown(
+        "<table style='width:100%;border-collapse:collapse;margin:.35rem 0 .65rem;'>"
+        "<thead><tr>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Component</th>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Status</th>"
+        "<th style='text-align:left;padding:.45rem;border-bottom:1px solid #dfe9e3;'>Detected Page(s)</th>"
+        "</tr></thead><tbody>"
+        + "".join(table_rows)
+        + "</tbody></table>",
+        unsafe_allow_html=True,
+    )
+    st.caption("BOD absence is excluded from GIS completeness; Annex A is optional.")
+
+    st.subheader("Beneficial Ownership Routing")
+    if bod["status"] == "Detected":
+        st.info(f"{bod['message']} Select the page for reviewer-controlled routing representation.")
+    else:
+        st.caption(bod["message"])
+    page_numbers = [page.get("page_number") for page in pages if page.get("page_number") is not None]
+    options = [None] + page_numbers
+    stored = document.get("gis_bod_routing_page")
+    detected_default = bod["page_numbers"][0] if bod["page_numbers"] else None
+    default = stored if stored in options else detected_default
+    selected = st.selectbox(
+        "BOD Page for Routing",
+        options,
+        index=options.index(default),
+        format_func=lambda page: "None / Not Applicable" if page is None else f"Page {page}",
+        key=f"gis_bod_routing_{document['id']}",
+        disabled=not bool(page_numbers),
+    )
+    if st.button("Save BOD Routing Selection", key=f"save_gis_bod_routing_{document['id']}"):
+        update_gis_bod_routing(document["id"], selected)
+        st.success("BOD routing selection saved for reviewer reference only; no external routing was performed.")
+
+
 def render():
     st.header("Document Review")
     st.caption("Reviewer view for page classification, text evidence, period checks, suggested revert reasons, and final recommendation.")
@@ -167,10 +247,13 @@ def render():
     pages = get_pages(document_id)
     validations = get_validations(document_id)
 
-    _render_afs_completeness_check(pages, document)
+    if is_gis_submission(document):
+        _render_gis_completeness_check(pages, document)
+    else:
+        _render_afs_completeness_check(pages, document)
 
     # ── Validation Results ────────────────────────────────────────────────────
-    st.subheader("Validation Results")
+    st.subheader("GIS Validation Results" if is_gis_submission(document) else "Validation Results")
     if validations:
         _render_validation_cards(validations)
     else:

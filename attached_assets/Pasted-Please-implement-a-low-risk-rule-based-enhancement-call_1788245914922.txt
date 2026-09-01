@@ -1,0 +1,819 @@
+Please implement a low-risk, rule-based enhancement called:
+
+GIS REVIEW LITE V1
+
+in the existing SEC eFAST Checkers Streamlit prototype.
+
+IMPORTANT:
+- Keep this as reviewer-assistance / rule-based intelligent automation.
+- This is NOT a trained AI/ML system.
+- Reuse the existing Upload / Intake -> Document Review -> HITL framework.
+- Do not create a completely separate application.
+- Do not add spaCy, ML, LLMs, external APIs, or heavy new dependencies.
+- Reuse current PDF text extraction and existing Tesseract OCR fallback.
+- Keep implementation small and presentation-safe.
+- Do not break any existing AFS functionality.
+- Generate the requested validation MD file.
+- Stop after implementing only this scope.
+
+Create at the end:
+
+docs/GIS_REVIEW_LITE_V1_VALIDATION.md
+
+
+==================================================
+1. ADD GIS AS A REPORT TYPE
+==================================================
+
+In Upload / Intake allow:
+
+Report Type:
+- AFS
+- GIS
+
+When AFS is selected:
+- preserve all current AFS behavior.
+
+When GIS is selected:
+show:
+
+Corporation Type:
+- Stock
+- Non-Stock
+
+Period Year
+
+Period Covered
+
+Submission Type
+
+Company Name
+
+SEC Registration Number
+
+Do NOT show AFS comparative-year controls for GIS.
+
+
+==================================================
+2. GIS DOCUMENT VARIATIONS
+==================================================
+
+GIS review must be CONTENT-BASED and must NOT depend on fixed page numbers.
+
+The prototype must tolerate:
+
+- raw GIS files;
+- GIS PDF Converted from Excel;
+- notarized scanned GIS copies;
+- accepted GIS copies with an SEC QR/acceptance page appended at the beginning;
+- optional Annex A / Primary Purpose continuation pages;
+- legacy GIS forms that may contain a Beneficial Ownership Declaration (BOD);
+- newer GIS forms where BOD may no longer be part of the normal form.
+
+Do not assume Page 1 is always the Corporate/Profile page.
+
+
+==================================================
+3. TEXT-LAYER VS OCR
+==================================================
+
+Reuse the existing PDF processing behavior.
+
+GIS PDF Converted from Excel:
+- usually contains selectable PDF text;
+- use normal Text Layer extraction first.
+
+Complete set of GIS Notarized Scanned Copy:
+- may be image-only;
+- use existing OCR Fallback only when usable PDF text is insufficient.
+
+Do not create another OCR engine.
+
+Display existing source traceability:
+
+Text Source:
+- Text Layer
+- OCR Fallback
+
+
+==================================================
+4. ACCEPTED QR / COVER PAGE HANDLING
+==================================================
+
+Some already-accepted GIS reports may have an SEC QR/acceptance page appended as the first page.
+
+Detect likely QR/acceptance-cover pages using available text evidence where reasonably possible.
+
+Possible indicators may include:
+- SEC acceptance wording;
+- QR Code / QR-related text;
+- Accepted / Received filing information;
+- filing/reference metadata not matching normal GIS body labels.
+
+When identified:
+
+- classify it as:
+  "SEC Acceptance / QR Cover"
+
+- exclude it from GIS completeness requirements;
+- do not treat it as the Corporate/Profile page;
+- do not allow its page position to shift or break GIS component detection.
+
+Do NOT claim visual QR-code authentication.
+
+If detection is uncertain:
+- leave the page reviewable;
+- do not fail completeness because of it.
+
+
+==================================================
+5. OPTIONAL ANNEX A
+==================================================
+
+Some GIS reports contain an additional Annex A page for Primary Purpose or continuation information.
+
+Recognize evidence such as:
+
+- ANNEX A
+- Primary Purpose
+- attached Annex A
+- purpose continuation
+
+Classify as:
+
+"Annex A / Primary Purpose"
+
+This is OPTIONAL.
+
+Its absence must NOT fail GIS completeness.
+
+
+==================================================
+6. BENEFICIAL OWNERSHIP DECLARATION (BOD)
+==================================================
+
+IMPORTANT BUSINESS RULE:
+
+Beneficial Ownership Declaration is a CONDITIONAL / LEGACY routing component.
+
+It must NOT be treated as universally required for all GIS files.
+
+Older/legacy GIS templates, including versions still allowed during transition/extension periods, may include a BOD page.
+
+Newer GIS forms may not include it.
+
+Also, during eFAST processing:
+
+- the receiving personnel may select the page number containing the BOD;
+- that BOD page may be forwarded/routed to another department;
+- after GIS acceptance, the BOD page may no longer appear in the accepted QA copy;
+- accepted reports may instead contain an SEC QR cover page.
+
+Therefore:
+
+A. Detect possible BOD page evidence using phrases such as:
+
+- BENEFICIAL OWNERSHIP DECLARATION
+- DECLARATION OF BENEFICIAL OWNERSHIP
+- BENEFICIAL OWNER
+- BENEFICIAL OWNERS
+
+Only use strong, explicit BOD heading/evidence.
+
+Do NOT classify an ordinary page merely because the phrase "beneficial owner" appears incidentally.
+
+B. Show a separate GIS review item:
+
+"Beneficial Ownership Declaration"
+
+Possible statuses:
+
+- Detected
+- Not Detected
+- Needs Review
+- Not Applicable / Accepted QA Copy
+
+C. Show detected page number(s).
+
+Example:
+
+Beneficial Ownership Declaration | Detected | Page 8
+
+D. Add a lightweight reviewer control if simple:
+
+"BOD Page for Routing"
+
+Dropdown:
+- None / Not Applicable
+- Page 1
+- Page 2
+- ...
+- Page N
+
+If an explicit BOD page is confidently detected:
+- preselect that page if safe.
+
+Reviewer must remain able to change the selection.
+
+Do NOT automatically transmit or route any document externally.
+This is only a prototype representation of the current receiving workflow.
+
+E. BOD must be excluded from the normal GIS completeness PASS/FAIL calculation.
+
+BOD absence alone must NEVER make GIS Completeness = Failed in this V1.
+
+F. Accepted/QA copy handling:
+
+If an SEC Acceptance / QR Cover page is detected:
+- BOD absence should be displayed as:
+  "Not Applicable / Accepted QA Copy"
+  or another equivalent reviewer-friendly status.
+
+Do not expect the BOD to remain in an accepted GIS copy.
+
+G. Do NOT hard-code a specific template year requirement.
+
+If form-version evidence such as 2020 or 2026 can be detected safely:
+- surface it as supporting evidence only.
+
+Do not fail a filing solely because the template version cannot be determined.
+
+
+==================================================
+7. GIS PERIOD YEAR VALIDATION
+==================================================
+
+Detect the GIS heading:
+
+"FOR THE YEAR ____"
+
+or equivalent clear heading evidence.
+
+Compare against Intake -> Period Year.
+
+Example:
+
+Detected:
+FOR THE YEAR 2026
+
+Intake:
+Period Year = 2026
+
+Result:
+Passed.
+
+If clearly mismatched:
+Failed.
+
+If not confidently detected:
+Needs Review.
+
+
+==================================================
+8. COMPANY PROFILE VALIDATION
+==================================================
+
+Check:
+
+- Company Name
+- SEC Registration Number
+
+against Intake metadata.
+
+Also check company-name consistency on GIS pages where the corporate name is expected/repeated.
+
+Results:
+
+Passed
+- consistent evidence.
+
+Needs Review
+- OCR/text evidence insufficient.
+
+Failed
+- clear company-name or registration-number mismatch.
+
+Reuse the existing deterministic/fuzzy company matching where possible.
+
+
+==================================================
+9. PERIOD COVERED / SUBMISSION TYPE
+==================================================
+
+Use simple GIS-specific rule logic.
+
+A. Annual Meeting
+
+Expected evidence:
+ACTUAL DATE OF ANNUAL MEETING
+
+Compare detected date against:
+Intake Period Covered.
+
+If equal:
+Passed.
+
+If clearly different:
+Failed.
+
+If unavailable/unclear:
+Needs Review.
+
+
+B. Special Meeting
+
+Look for:
+- Special Meeting
+- Actual Date of Special Meeting
+or equivalent clear text.
+
+Period Covered should correspond to the special-meeting date.
+
+Do not apply Annual Meeting rules blindly.
+
+
+C. Amendment / Amended GIS
+
+Look for:
+- Amendment
+- Amended
+- Amended GIS
+
+Show detected Actual Date of Annual Meeting where available.
+
+Use simple deterministic validation only.
+
+
+D. No Meeting / Non-Holding of Annual Meeting
+
+If text indicates:
+- No Meeting
+- No Meeting Held
+- Non-Holding of Annual Meeting
+- ANHAM
+or equivalent evidence:
+
+do NOT automatically fail because Actual Date of Annual Meeting is absent.
+
+Route:
+Needs Review
+
+with explanation that the no-meeting rule requires reviewer confirmation.
+
+
+==================================================
+10. GIS STOCK COMPLETENESS PROFILE
+==================================================
+
+For GIS - Stock, check these component groups:
+
+1. Corporate / Profile / Meeting Information
+   Includes evidence for:
+   - GIS header
+   - Corporate Name
+   - SEC Registration Number
+   - annual meeting information
+   - addresses
+   - contact information
+
+2. AMLA Information
+
+3. Capital Structure
+
+4. Directors / Officers
+
+5. Stockholders' Information
+
+IMPORTANT:
+- Stockholders' information may span several pages.
+- Only the first stockholders page may exist when no additional stockholders require continuation pages.
+- Do NOT require specific Pages 5, 6, and 7.
+- At least one valid stockholders section is sufficient for completeness.
+
+6. Investments / Other Corporate Information
+
+Look for evidence related to:
+- investments;
+- treasury shares;
+- retained earnings;
+- dividends;
+- additional shares;
+- secondary licenses;
+- manpower.
+
+7. Corporate Secretary Attestation / Notarization
+
+Optional informational rows:
+
+8. Annex A / Primary Purpose
+   OPTIONAL
+
+9. Beneficial Ownership Declaration
+   CONDITIONAL / LEGACY
+   EXCLUDED FROM COMPLETENESS PASS/FAIL
+
+
+==================================================
+11. GIS NON-STOCK COMPLETENESS PROFILE
+==================================================
+
+For GIS - Non-Stock, check:
+
+1. Corporate / Profile / Meeting Information
+
+2. AMLA Information
+
+3. Directors / Officers
+
+4. Affiliations / Investments / Fund Balance /
+   Secondary Licenses / Manpower
+
+5. Corporate Secretary Attestation / Notarization
+
+Optional informational rows:
+
+6. Annex A / Primary Purpose
+   OPTIONAL
+
+7. Beneficial Ownership Declaration
+   CONDITIONAL / LEGACY
+   EXCLUDED FROM COMPLETENESS PASS/FAIL
+
+
+Do NOT require for Non-Stock:
+
+- Capital Structure
+- Stockholders' Information
+
+
+==================================================
+12. CORPORATE SECRETARY / NOTARIZATION
+==================================================
+
+Detect text evidence for:
+
+- Corporate Secretary
+- attestation
+- SUBSCRIBED AND SWORN
+- ACKNOWLEDGMENT / ACKNOWLEDGEMENT
+- NOTARY PUBLIC
+- DOC. NO.
+- PAGE NO.
+- BOOK NO.
+- SERIES OF
+
+Separate machine-detectable text evidence from visual verification.
+
+Example:
+
+Corporate Secretary Attestation:
+Detected
+
+Notarization Text:
+Detected
+
+Signature / Notarial Stamp:
+Visual Confirmation Required
+
+
+IMPORTANT:
+
+Do NOT claim:
+- handwritten signature authentication;
+- notarial-signature authentication;
+- stamp/seal authentication;
+- legal validity/authenticity of notarization.
+
+
+==================================================
+13. IMAGE QUALITY / ORIENTATION
+==================================================
+
+Reuse the existing:
+
+- page geometry;
+- rotation metadata;
+- text length;
+- OCR fallback;
+- preliminary readability/quality signal.
+
+GIS-specific review should surface:
+
+Image Quality
+Page Orientation
+Rotation
+Text Source
+
+Do not add a new image-processing model.
+
+
+==================================================
+14. DOCUMENT REVIEW UI
+==================================================
+
+Reuse the current Document Review page.
+
+When selected document is GIS, show:
+
+CURRENTLY REVIEWING
+
+Company
+SEC Registration No.
+Report Type: GIS
+Corporation Type: Stock / Non-Stock
+Period Year
+Period Covered
+Submission Type
+
+
+Then show:
+
+A. GIS Validation Results
+
+Suggested checks:
+
+- Company Name
+- SEC Registration Number
+- Period Year
+- Period Covered
+- Submission Type
+- Image Quality
+- Page Orientation
+- GIS Completeness
+- Corporate Secretary / Notarization
+
+
+B. GIS Completeness Check
+
+Table:
+
+Component | Status | Detected Page(s)
+
+Use:
+- Detected
+- Missing
+- Needs Review
+
+Optional/conditional items should be clearly identified as such.
+
+Example:
+
+Annex A / Primary Purpose
+Optional — Detected / Not Present
+
+Beneficial Ownership Declaration
+Conditional / Legacy — Detected / Not Detected /
+Not Applicable
+
+
+C. Beneficial Ownership Routing
+
+If practical, add a compact section:
+
+Beneficial Ownership Declaration
+
+Detected Page:
+Page X
+
+BOD Page for Routing:
+[dropdown]
+
+This selection should be reviewer-controlled.
+
+No actual external routing is required.
+
+
+D. Page Review
+
+Reuse existing page accordions.
+
+Display:
+- page type / GIS component evidence;
+- Text Layer / OCR Fallback;
+- company evidence;
+- year/date evidence;
+- orientation/quality.
+
+
+E. Reviewer Disposition
+
+Reuse the existing final recommendation / remarks workflow.
+
+Do NOT automatically Accept or Revert based solely on one heuristic result.
+
+
+==================================================
+15. IMPORTANT ACCEPTED VS RAW GIS BEHAVIOR
+==================================================
+
+The prototype must handle these two situations:
+
+RAW GIS:
+
+Possible structure:
+- Corporate/Profile page
+- AMLA
+- Capital Structure if Stock
+- Directors/Officers
+- Stockholders if Stock
+- other GIS sections
+- Corporate Secretary/notarization
+- optional Annex A
+- possible legacy BOD page
+
+BOD may be detected and selected for routing.
+
+
+ACCEPTED / QA GIS:
+
+Possible structure:
+- SEC Acceptance / QR Cover as first page
+- accepted GIS body
+- BOD may already have been removed
+
+Therefore:
+
+- QR cover is excluded from completeness;
+- absence of BOD does not fail completeness;
+- BOD may show Not Applicable / Accepted QA Copy.
+
+
+==================================================
+16. DO NOT IMPLEMENT YET
+==================================================
+
+Do NOT implement:
+
+- full validation of officer names;
+- full stockholder extraction;
+- share-count validation;
+- AMLA field-value validation;
+- financial/investment amount validation;
+- signature recognition;
+- QR-code authentication;
+- notarial stamp authentication;
+- BOD substantive-value validation;
+- external BOD forwarding;
+- Excel/XLSX parsing;
+- trained NLP;
+- GIS-specific ML models;
+- separate GIS dashboard.
+
+
+==================================================
+17. REGRESSION SAFETY
+==================================================
+
+Verify all existing features remain operational:
+
+- AFS Completeness Check
+- Multi-Year AFS Support
+- Computed Confidence + HITL
+- Simple OCR Fallback
+- Test Upload Management
+- real-upload safeguards
+- three seeded AFS demo documents
+- AFS Figures Extraction Review
+
+
+==================================================
+18. TEST GIS SCENARIOS
+==================================================
+
+Test at minimum:
+
+A. GIS Stock regular Annual Meeting
+Expected:
+core Stock components detected and period rules run.
+
+B. GIS Non-Stock
+Expected:
+Capital Structure and Stockholders not required.
+
+C. Stock GIS with only one Stockholders page
+Expected:
+Stockholders completeness satisfied.
+
+D. GIS with optional Annex A
+Expected:
+Annex A detected but absence would not fail completeness.
+
+E. Legacy/raw GIS containing BOD
+Expected:
+BOD detected with page number;
+excluded from completeness PASS/FAIL;
+reviewer can select/confirm routing page if control is implemented.
+
+F. GIS without BOD
+Expected:
+absence alone does not fail completeness.
+
+G. Accepted GIS with QR cover and no BOD
+Expected:
+QR page excluded;
+BOD shown Not Applicable / Accepted QA Copy or equivalent;
+GIS completeness still based on body components.
+
+H. Text-layer GIS PDF converted from Excel
+Expected:
+normal text extraction used.
+
+I. Scanned notarized GIS
+Expected:
+OCR fallback used on low-text pages where necessary.
+
+J. Period Year mismatch
+Expected:
+Failed / reviewer finding.
+
+K. Annual Meeting Period Covered mismatch
+Expected:
+Failed / reviewer finding.
+
+L. No Meeting / ANHAM wording
+Expected:
+Needs Review, not automatic failure.
+
+M. Corporate Secretary/notarial text present
+Expected:
+text evidence detected;
+signature/stamp still requires visual confirmation.
+
+N. Existing AFS workflows
+Expected:
+unchanged and operational.
+
+
+==================================================
+19. CREATE VALIDATION DOCUMENT
+==================================================
+
+Create:
+
+docs/GIS_REVIEW_LITE_V1_VALIDATION.md
+
+
+The MD must include:
+
+1. Scope
+2. Exact files changed
+3. GIS intake fields
+4. Stock completeness profile
+5. Non-Stock completeness profile
+6. Period Year logic
+7. Period Covered / Submission Type logic
+8. Company-profile logic
+9. QR/accepted-cover handling
+10. Annex A handling
+11. Beneficial Ownership Declaration logic
+12. BOD routing-page behavior
+13. Raw GIS vs Accepted/QA GIS behavior
+14. Corporate Secretary / notarization behavior
+15. Text Layer vs OCR behavior
+16. Test results A-N:
+
+Scenario | Expected | Actual | Pass/Fail
+
+17. Existing AFS regression results
+18. Database/schema changes
+19. Demo-data impact
+20. Known limitations
+
+Explicitly confirm:
+
+- BOD is conditional/legacy;
+- BOD absence does not fail GIS completeness;
+- accepted GIS may legitimately contain QR cover but no BOD;
+- no signature/stamp authentication exists;
+- no QR authentication exists;
+- no BOD substantive-value validation exists;
+- no external BOD routing exists;
+- no trained NLP/ML was added.
+
+Final assessment:
+
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+
+
+==================================================
+OUTPUT
+==================================================
+
+After implementation:
+
+1. List exact files changed
+2. Summarize GIS Review Lite behavior
+3. Summarize BOD handling
+4. Summarize QR/accepted-report handling
+5. Report tests A-N
+6. Confirm existing AFS features remain intact
+7. Confirm:
+
+docs/GIS_REVIEW_LITE_V1_VALIDATION.md
+
+was created
+8. Confirm app runs successfully
+
+STOP after this scope.

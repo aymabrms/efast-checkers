@@ -28,7 +28,10 @@ def init_db() -> None:
         comparative_years TEXT,
         submission_type TEXT,
         filing_year INTEGER,
-        uploaded_at TEXT
+        uploaded_at TEXT,
+        corporation_type TEXT,
+        period_covered TEXT,
+        gis_bod_routing_page INTEGER
     );
     CREATE TABLE IF NOT EXISTS company_master (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,6 +101,13 @@ def init_db() -> None:
         cur.execute("ALTER TABLE page_analysis ADD COLUMN ocr_text TEXT")
     if "extraction_source" not in page_columns:
         cur.execute("ALTER TABLE page_analysis ADD COLUMN extraction_source TEXT DEFAULT 'Text Layer'")
+    document_columns = {row[1] for row in cur.execute("PRAGMA table_info(documents)").fetchall()}
+    if "corporation_type" not in document_columns:
+        cur.execute("ALTER TABLE documents ADD COLUMN corporation_type TEXT")
+    if "period_covered" not in document_columns:
+        cur.execute("ALTER TABLE documents ADD COLUMN period_covered TEXT")
+    if "gis_bod_routing_page" not in document_columns:
+        cur.execute("ALTER TABLE documents ADD COLUMN gis_bod_routing_page INTEGER")
     conn.commit()
     conn.close()
 
@@ -122,13 +132,18 @@ def query(sql: str, params: Iterable[Any] = ()) -> List[Dict]:
 def insert_document(metadata: Dict[str, Any]) -> int:
     return execute(
         """
-        INSERT INTO documents (filename, company_name, sec_registration_no, report_type, period_covered_year, comparative_years, submission_type, filing_year, uploaded_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO documents (
+            filename, company_name, sec_registration_no, report_type, period_covered_year,
+            comparative_years, submission_type, filing_year, uploaded_at,
+            corporation_type, period_covered, gis_bod_routing_page
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             metadata.get("filename"), metadata.get("company_name"), metadata.get("sec_registration_no"),
             metadata.get("report_type"), metadata.get("period_covered_year"), metadata.get("comparative_years"),
             metadata.get("submission_type"), metadata.get("filing_year"), datetime.now().isoformat(timespec="seconds"),
+            metadata.get("corporation_type"), metadata.get("period_covered"), metadata.get("gis_bod_routing_page"),
         ),
     )
 
@@ -225,6 +240,13 @@ def save_reviewer_action(document_id: int, remarks: str, recommendation: str, re
             """,
             (document_id, remarks, recommendation, revert_reason, datetime.now().isoformat(timespec="seconds")),
         )
+
+
+def update_gis_bod_routing(document_id: int, page_number: Optional[int]) -> None:
+    execute(
+        "UPDATE documents SET gis_bod_routing_page = ? WHERE id = ?",
+        (page_number, document_id),
+    )
 
 
 def update_figure_reviews(document_id: int, rows: List[Dict]) -> None:
