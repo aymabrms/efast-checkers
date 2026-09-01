@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from db import update_figure_reviews
+from extraction_engine import fiscal_year_candidates
 from storage import get_document, get_documents, get_figures
 from ui_helpers import dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
 
@@ -19,6 +20,35 @@ def _safe_conf_display(val) -> str:
         return f"{v * 100:.0f}% · Est."
     except (TypeError, ValueError):
         return "—"
+
+
+def _current_revenue_value(df: pd.DataFrame, current_year):
+    if current_year is None:
+        return None
+    current_revenue = df[
+        (df["fiscal_year"] == current_year)
+        & (df["normalized_label"].isin(REVENUE_LABELS))
+    ]["normalized_peso_value"].dropna()
+    current_revenue = current_revenue[
+        current_revenue.apply(lambda value: not math.isnan(float(value)) if value is not None else False)
+    ]
+    return current_revenue.max() if not current_revenue.empty else None
+
+
+def _normalized_figure_buckets(df: pd.DataFrame, current_year) -> pd.DataFrame:
+    bucket_source = df.dropna(subset=["normalized_peso_value"]).copy()
+    if bucket_source.empty:
+        return pd.DataFrame(columns=["Field", "Fiscal Year", "Year Role", "Total (₱)"])
+    bucket_source["Fiscal Year"] = bucket_source["fiscal_year"].astype(int)
+    bucket_source["Year Role"] = bucket_source["Fiscal Year"].apply(
+        lambda year: "Current" if current_year is not None and year == current_year else "Comparative"
+    )
+    bucket = (
+        bucket_source.groupby(["normalized_label", "Fiscal Year", "Year Role"], as_index=False)["normalized_peso_value"]
+        .sum()
+        .sort_values("normalized_peso_value", ascending=False)
+    )
+    return bucket.rename(columns={"normalized_label": "Field", "normalized_peso_value": "Total (₱)"})
 
 
 def render():
@@ -53,6 +83,18 @@ def render():
     # ── Persistent "Currently Reviewing" banner ──────────────────────────────
     reviewing_banner(document)
 
+    current_year = int(document["period_covered_year"]) if document.get("period_covered_year") else None
+    reporting_years = fiscal_year_candidates(document)
+    reporting_years_display = " · ".join(str(year) for year in reporting_years) if reporting_years else "—"
+    st.markdown(f"**Reporting Years:** {reporting_years_display}")
+    if reporting_years:
+        st.caption(
+            " · ".join(
+                f"{year} = {'Current' if year == current_year else 'Comparative'}"
+                for year in reporting_years
+            )
+        )
+
     figures = get_figures(document_id)
     if not figures:
         st.warning("No supported financial figures were reliably extracted from this document.")
@@ -67,13 +109,24 @@ def render():
             "remain blank until the reviewer verifies the source."
         )
 
-    # Guard NaN in revenue display
-    rev_raw = df[df["normalized_label"].isin(REVENUE_LABELS)]["normalized_peso_value"].dropna()
-    rev_raw = rev_raw[rev_raw.apply(lambda x: not math.isnan(float(x)) if x is not None else False)]
-    rev_display = format_peso(rev_raw.max()) if not rev_raw.empty else "No detected revenue"
+    available_years = sorted(df["fiscal_year"].dropna().astype(int).unique(), reverse=True)
+    year_options = ["All Years"] + [
+        f"{year} — {'Current' if year == current_year else 'Comparative'}"
+        for year in available_years
+    ]
+    selected_year = st.selectbox(
+        "View Fiscal Year",
+        year_options,
+        key=f"figures_year_filter_{document_id}",
+    )
+    selected_year_value = None if selected_year == "All Years" else int(selected_year.split(" ", 1)[0])
+    view_df = df if selected_year_value is None else df[df["fiscal_year"] == selected_year_value].copy()
 
-    fiscal_years = sorted(df["fiscal_year"].dropna().unique(), reverse=True)
-    fiscal_years_display = ", ".join(str(int(y)) for y in fiscal_years) if fiscal_years else "—"
+    # Current Revenue is intentionally limited to the document's Period Covered Year.
+    current_revenue = _current_revenue_value(df, current_year)
+    rev_display = format_peso(current_revenue) if current_revenue is not None else "No detected revenue"
+
+    fiscal_years_display = " · ".join(str(year) for year in reporting_years) if reporting_years else "—"
 
     needs_review_count = int(df["review_status"].isin(["Needs Review", "Check Source"]).sum())
 
@@ -101,8 +154,11 @@ def render():
         "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis",
         "source_snippet", "confidence", "review_status", "reviewer_edited", "reviewed_value",
     ]
-    editable = df[review_cols].copy()
+    editable = view_df[review_cols].copy()
     editable["reviewed_value"] = editable["reviewed_value"].fillna("")
+    editable["year_role"] = editable["fiscal_year"].apply(
+        lambda year: "Current" if current_year is not None and int(year) == current_year else "Comparative"
+    )
 
     # Add human-readable confidence display column
     editable["conf_display"] = editable["confidence"].apply(_safe_conf_display)
@@ -114,7 +170,7 @@ def render():
     # Columns shown to reviewer (conf_display replaces raw confidence)
     display_cols = [
         "id", "page_number", "statement_type", "raw_label", "normalized_label",
-        "fiscal_year", "displayed_value", "normalized_peso_value", "unit_basis",
+        "fiscal_year", "year_role", "displayed_value", "normalized_peso_value", "unit_basis",
         "source_snippet", "conf_display", "review_status", "reviewer_edited", "reviewed_value",
     ]
     editable_view = editable[display_cols].copy()
@@ -130,6 +186,7 @@ def render():
             "raw_label": st.column_config.TextColumn("Raw Label", disabled=True),
             "normalized_label": st.column_config.TextColumn("Normalized Label", disabled=True),
             "fiscal_year": st.column_config.NumberColumn("Fiscal Year", disabled=True, width="small"),
+            "year_role": st.column_config.TextColumn("Year Role", disabled=True, width="small"),
             "displayed_value": st.column_config.TextColumn("Displayed Value", disabled=True),
             "normalized_peso_value": st.column_config.NumberColumn(
                 "Normalized (₱)", disabled=True, format="₱%.0f"
@@ -141,7 +198,7 @@ def render():
                 "Status", options=["Needs Review", "Check Source", "Reviewed", "Corrected", "Rejected"]
             ),
             "reviewer_edited": st.column_config.CheckboxColumn("Edited?", disabled=True, width="small"),
-            "reviewed_value": st.column_config.TextColumn("Reviewed Value"),
+            "reviewed_value": st.column_config.TextColumn("Reviewed / Corrected Value"),
         },
     )
 
@@ -161,20 +218,16 @@ def render():
         dataframe_download(export_df, f"sec_efast_figures_document_{document_id}.csv", "Export Figures CSV")
 
     st.subheader("Normalized Figure Buckets")
-    bucket_source = df.dropna(subset=["normalized_peso_value"])
-    if bucket_source.empty:
+    bucket = _normalized_figure_buckets(view_df, current_year)
+    if bucket.empty:
         st.info("No safely normalized peso values are available for aggregation yet.")
     else:
-        bucket = (
-            bucket_source.groupby("normalized_label", as_index=False)["normalized_peso_value"]
-            .sum()
-            .sort_values("normalized_peso_value", ascending=False)
-        )
         st.dataframe(
-            bucket.rename(columns={"normalized_label": "Field", "normalized_peso_value": "Total (₱)"}),
+            bucket,
             width="stretch",
             hide_index=True,
             column_config={
+                "Fiscal Year": st.column_config.NumberColumn("Fiscal Year", format="%d"),
                 "Total (₱)": st.column_config.NumberColumn("Total (₱)", format="₱%.0f"),
             },
         )

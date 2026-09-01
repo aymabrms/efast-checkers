@@ -1,0 +1,299 @@
+Please implement one focused enhancement to the current SEC eFAST Checkers prototype:
+
+MULTI-YEAR AFS SUPPORT V1
+
+IMPORTANT:
+- Inspect the existing implementation first
+- Keep this low-risk and low-credit
+- Do NOT redesign the app
+- Do NOT add OCR, NLP, ML, external APIs, or new dependencies
+- Do NOT modify GIS, Historical View, Rankings, demo seeding, completeness rules, or reviewer disposition
+- Preserve Test Upload Management V1
+- Reuse the existing extracted_figures.fiscal_year structure wherever possible
+- Stop after this scope
+- Generate the requested validation MD file at the end
+
+GOAL
+
+Support AFS reports containing:
+
+- current period only
+- current period + 1 comparative year
+- current period + 2 comparative years
+
+Examples:
+
+2025
+
+2025 / 2024
+
+2025 / 2024 / 2023
+
+The prototype must not assume that every AFS has comparative figures.
+
+--------------------------------------------------
+1. IMPROVE UPLOAD / INTAKE YEAR INPUT
+--------------------------------------------------
+
+Replace the current free-text Comparative Years input with structured controls.
+
+Keep:
+
+Period Covered Year
+Example:
+2025
+
+Add:
+
+Comparative Figures Included?
+- No
+- Yes
+
+If No:
+- store/use no comparative years
+
+If Yes, show:
+
+Number of Comparative Years
+- 1
+- 2
+
+Then dynamically show:
+
+Comparative Year 1
+Comparative Year 2, only when 2 is selected
+
+Suggested defaults:
+
+Period Covered Year = 2025
+Comparative Year 1 = 2024
+Comparative Year 2 = 2023
+
+Allow the user to edit them.
+
+Validation rules:
+
+- no duplicate years
+- comparative year cannot equal the Period Covered Year
+- comparative year should be earlier than the Period Covered Year
+- maximum 2 comparative years for this prototype
+
+Do not use a manually typed comma-separated field in the UI.
+
+Reuse the existing document metadata/storage format if practical.
+Avoid schema redesign unless absolutely necessary.
+
+--------------------------------------------------
+2. PASS ALL SELECTED YEARS TO EXTRACTION
+--------------------------------------------------
+
+When an AFS is analyzed:
+
+- build the reporting-year list from:
+  Period Covered Year
+  + selected Comparative Years
+
+Example:
+
+[2025, 2024, 2023]
+
+The existing figure extraction process should attempt extraction for every selected fiscal year supported by its current text rules.
+
+Important:
+
+- do NOT invent missing comparative figures
+- do NOT copy the current-year value into another year
+- if a year/value is not reliably found, simply do not create that figure row
+- preserve the correct fiscal_year on every extracted figure
+
+Do NOT implement advanced table-column OCR in this iteration.
+
+This enhancement should only make the current extraction engine multi-year aware.
+
+--------------------------------------------------
+3. FIGURES REVIEW — MULTI-YEAR DISPLAY
+--------------------------------------------------
+
+Update AFS Figures Extraction Review so the page no longer appears current-year-only.
+
+Near the top, display:
+
+Reporting Years:
+2025 · 2024 · 2023
+
+Clearly identify:
+- 2025 = Current
+- 2024 / 2023 = Comparative
+
+Add a compact filter:
+
+View Fiscal Year:
+- All Years
+- 2025 — Current
+- 2024 — Comparative
+- 2023 — Comparative
+
+Only show options that exist for the selected document.
+
+Keep the existing review table.
+
+Ensure each row visibly retains:
+
+- Normalized Label
+- Fiscal Year
+- Displayed Value
+- Normalized Peso Value
+- Confidence
+- Status
+- Reviewed/Corrected Value
+
+If easy, add a small Year Role field:
+- Current
+- Comparative
+
+Do not heavily redesign the table.
+
+--------------------------------------------------
+4. FIX YEAR-SPECIFIC SUMMARY LOGIC
+--------------------------------------------------
+
+Very important:
+
+Do not aggregate values from different fiscal years together.
+
+Normalized Figure Buckets must be grouped by:
+
+normalized_label + fiscal_year
+
+NOT only normalized_label.
+
+Example:
+
+total_assets | 2025 | ₱1,248,900,000.00
+total_assets | 2024 | ₱1,074,500,000.00
+
+These must remain separate values.
+
+Any hero metric such as Current Revenue must use ONLY the Period Covered Year.
+
+Do not accidentally display or sum a comparative-year amount as current revenue.
+
+--------------------------------------------------
+5. CSV EXPORT
+--------------------------------------------------
+
+Confirm that exported figure data includes fiscal_year.
+
+If the export already contains fiscal_year, preserve it.
+
+Do not pivot the main export yet.
+
+--------------------------------------------------
+6. BACKWARD COMPATIBILITY
+--------------------------------------------------
+
+Existing documents must continue working.
+
+Especially verify:
+
+- current 3 seeded demo documents
+- documents with only one reporting year
+- documents already storing comparative_years
+- existing figure corrections
+- Test Upload Management delete behavior
+
+Do not reseed or reset the database.
+
+--------------------------------------------------
+7. TEST SCENARIOS
+--------------------------------------------------
+
+Test:
+
+A. 2025 only
+Expected:
+Reporting Years = 2025
+No comparative-year controls/results.
+
+B. 2025 + 2024
+Expected:
+both years stored and available in Figures Review.
+
+C. 2025 + 2024 + 2023
+Expected:
+all three years recognized and filterable.
+
+D. Duplicate comparative year
+Expected:
+validation prevents submission.
+
+E. Comparative year equal to or later than current year
+Expected:
+validation prevents submission.
+
+F. Current-year and comparative-year values for same label
+Expected:
+separate extracted rows by fiscal_year.
+
+G. Normalized Figure Buckets
+Expected:
+same financial label across different years remains separate and is not summed together.
+
+H. Current Revenue hero metric
+Expected:
+uses Period Covered Year only.
+
+I. Existing demo documents
+Expected:
+remain intact and app runs normally.
+
+--------------------------------------------------
+8. CREATE VALIDATION MD
+--------------------------------------------------
+
+Create:
+
+docs/MULTI_YEAR_AFS_SUPPORT_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. Exact files changed
+3. Updated Upload / Intake year controls
+4. Year validation rules
+5. How reporting years are stored/passed to extraction
+6. How extracted_figures.fiscal_year is used
+7. Figures Review multi-year behavior
+8. Normalized bucket grouping behavior
+9. Current-year hero metric behavior
+10. CSV export behavior
+11. Test results A-I in a table:
+    Scenario | Expected | Actual | Pass/Fail
+12. Demo-data impact
+13. Known limitations
+14. Final assessment:
+    - Safe for prototype testing
+    - Needs minor refinement
+    - Requires correction
+
+Clearly state that advanced table-aware multi-column extraction/OCR is NOT implemented yet.
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Exact files changed
+2. Summary of multi-year behavior implemented
+3. Test results A-I
+4. Any database/schema change made
+5. Confirmation demo records remain intact
+6. Confirmation Test Upload Management still works
+7. Confirmation this file was created:
+
+docs/MULTI_YEAR_AFS_SUPPORT_V1_VALIDATION.md
+
+8. Confirmation app still runs
+
+STOP after this scope.
