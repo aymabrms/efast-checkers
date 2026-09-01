@@ -3,21 +3,22 @@ import math
 import pandas as pd
 import streamlit as st
 
+from confidence import CONFIDENCE_WEIGHTS, calculate_figure_confidence
 from db import update_figure_reviews
-from extraction_engine import fiscal_year_candidates
-from storage import get_document, get_documents, get_figures
+from extraction_engine import MANDATORY_LABELS, fiscal_year_candidates
+from storage import get_document, get_documents, get_figures, get_pages
 from ui_helpers import dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
 
 REVENUE_LABELS = {"gross_revenue", "total_revenue", "revenue"}
 
 
-def _safe_conf_display(val) -> str:
-    """Format a 0–1 confidence float as '91% · Est.' or '—' if missing."""
+def _confidence_display(score, classification) -> str:
+    """Format a computed 0–100 score for reviewer display."""
     try:
-        v = float(val)
-        if math.isnan(v):
+        value = int(score)
+        if value < 0 or value > 100:
             return "—"
-        return f"{v * 100:.0f}% · Est."
+        return f"{value}% · {classification}"
     except (TypeError, ValueError):
         return "—"
 
@@ -101,12 +102,37 @@ def render():
         return
 
     df = pd.DataFrame(figures)
-    check_source_count = int((df["review_status"] == "Check Source").sum())
+    pages_by_number = {
+        int(page["page_number"]): page
+        for page in get_pages(document_id)
+        if page.get("page_number") is not None
+    }
+    computed_by_id = {}
+    for row in figures:
+        page = pages_by_number.get(int(row["page_number"])) if row.get("page_number") is not None else None
+        evidence_row = {**row, "_mandatory_labels": MANDATORY_LABELS}
+        computed_by_id[row["id"]] = calculate_figure_confidence(evidence_row, page)
+
+    def effective_review_status(row):
+        computed = computed_by_id.get(row["id"], {})
+        stored_status = row.get("review_status") or "Needs Review"
+        if row.get("reviewer_edited") or stored_status in {"Reviewed", "Corrected", "Rejected"}:
+            return stored_status
+        return computed.get("initial_review_status", stored_status)
+
+    df["computed_confidence_score"] = df["id"].map(
+        lambda figure_id: computed_by_id.get(figure_id, {}).get("score")
+    )
+    df["confidence_classification"] = df["id"].map(
+        lambda figure_id: computed_by_id.get(figure_id, {}).get("classification", "Low")
+    )
+    df["computed_review_status"] = df.apply(effective_review_status, axis=1)
+    check_source_count = int((df["computed_review_status"] == "Check Source").sum())
     if check_source_count:
         st.warning(
             f"{check_source_count} figure row(s) have **Check Source** status. "
-            "Ambiguous numeric formatting detected. Original raw values are retained and normalized peso values "
-            "remain blank until the reviewer verifies the source."
+            "Low-confidence or safety-capped evidence requires source verification. Ambiguous raw values are "
+            "retained and normalized peso values remain blank rather than being repaired automatically."
         )
 
     available_years = sorted(df["fiscal_year"].dropna().astype(int).unique(), reverse=True)
@@ -128,7 +154,7 @@ def render():
 
     fiscal_years_display = " · ".join(str(year) for year in reporting_years) if reporting_years else "—"
 
-    needs_review_count = int(df["review_status"].isin(["Needs Review", "Check Source"]).sum())
+    needs_review_count = int(df["computed_review_status"].isin(["Needs Review", "Check Source"]).sum())
 
     hero_cols = st.columns(5)
     with hero_cols[0]:
@@ -144,7 +170,7 @@ def render():
 
     st.subheader(f"Extracted Figures Review Table — {document['company_name']}")
     st.caption(
-        "Confidence values are rule-based estimates from the prototype extraction engine — not ML model scores. "
+        "Computed confidence uses deterministic prototype rules — it is not an ML probability. "
         "Review and correct as needed before treating figures as authoritative."
     )
 
@@ -160,18 +186,24 @@ def render():
         lambda year: "Current" if current_year is not None and int(year) == current_year else "Comparative"
     )
 
-    # Add human-readable confidence display column
-    editable["conf_display"] = editable["confidence"].apply(_safe_conf_display)
+    editable["computed_confidence_score"] = editable["id"].map(df.set_index("id")["computed_confidence_score"])
+    editable["confidence_classification"] = editable["id"].map(df.set_index("id")["confidence_classification"])
+    editable["computed_review_status"] = editable.apply(effective_review_status, axis=1)
+    editable["conf_display"] = editable.apply(
+        lambda row: _confidence_display(row["computed_confidence_score"], row["confidence_classification"]),
+        axis=1,
+    )
+    editable["review_status"] = editable["computed_review_status"]
 
     # Sort: Needs Review first, then by page_number
     sort_key = editable["review_status"].apply(lambda s: 0 if s in ("Needs Review", "Check Source") else 1)
     editable = editable.assign(_sort=sort_key).sort_values(["_sort", "page_number"]).drop(columns=["_sort"])
 
-    # Columns shown to reviewer (conf_display replaces raw confidence)
+    # Keep reviewer actions near confidence; source details remain in the explanation panel and export.
     display_cols = [
-        "id", "page_number", "statement_type", "raw_label", "normalized_label",
-        "fiscal_year", "year_role", "displayed_value", "normalized_peso_value", "unit_basis",
-        "source_snippet", "conf_display", "review_status", "reviewer_edited", "reviewed_value",
+        "id", "page_number", "raw_label", "fiscal_year", "year_role",
+        "displayed_value", "conf_display", "review_status", "reviewed_value",
+        "normalized_label", "normalized_peso_value", "reviewer_edited",
     ]
     editable_view = editable[display_cols].copy()
 
@@ -182,7 +214,6 @@ def render():
         column_config={
             "id": st.column_config.NumberColumn("ID", disabled=True, width="small"),
             "page_number": st.column_config.NumberColumn("Page", disabled=True, width="small"),
-            "statement_type": st.column_config.TextColumn("Statement Type", disabled=True),
             "raw_label": st.column_config.TextColumn("Raw Label", disabled=True),
             "normalized_label": st.column_config.TextColumn("Normalized Label", disabled=True),
             "fiscal_year": st.column_config.NumberColumn("Fiscal Year", disabled=True, width="small"),
@@ -191,30 +222,123 @@ def render():
             "normalized_peso_value": st.column_config.NumberColumn(
                 "Normalized (₱)", disabled=True, format="₱%.0f"
             ),
-            "unit_basis": st.column_config.TextColumn("Unit Basis", disabled=True, width="small"),
-            "source_snippet": st.column_config.TextColumn("Source Snippet", disabled=True),
-            "conf_display": st.column_config.TextColumn("Confidence (Est.)", disabled=True, width="medium"),
+            "conf_display": st.column_config.TextColumn("Computed Confidence", disabled=True, width="medium"),
             "review_status": st.column_config.SelectboxColumn(
-                "Status", options=["Needs Review", "Check Source", "Reviewed", "Corrected", "Rejected"]
+                "Review Status", options=[
+                    "Ready for Quick Validation", "Needs Review", "Check Source",
+                    "Reviewed", "Corrected", "Rejected",
+                ]
             ),
             "reviewer_edited": st.column_config.CheckboxColumn("Edited?", disabled=True, width="small"),
             "reviewed_value": st.column_config.TextColumn("Reviewed / Corrected Value"),
         },
     )
 
+    with st.expander("Explain Computed Confidence", expanded=False):
+        explanation_ids = editable["id"].tolist()
+        if explanation_ids:
+            selected_explanation_id = st.selectbox(
+                "Figure row",
+                explanation_ids,
+                format_func=lambda figure_id: (
+                    f"#{figure_id} — "
+                    f"{editable.loc[editable['id'] == figure_id, 'raw_label'].iloc[0]} "
+                    f"({editable.loc[editable['id'] == figure_id, 'fiscal_year'].iloc[0]})"
+                ),
+                key=f"confidence_explanation_{document_id}",
+            )
+            selected_computed = computed_by_id.get(selected_explanation_id)
+            if selected_computed:
+                st.markdown(
+                    f"**Computed Confidence: {selected_computed['score']}% · "
+                    f"{selected_computed['classification']}**"
+                )
+                st.caption(
+                    "Confidence is calculated from deterministic prototype rules and is not an ML probability. "
+                    f"Initial routing: {selected_computed['initial_review_status']}."
+                )
+                selected_row = editable.loc[editable["id"] == selected_explanation_id].iloc[0]
+                st.caption(
+                    f"Page {int(selected_row['page_number'])} · "
+                    f"Unit basis: {selected_row['unit_basis']} · "
+                    f"Displayed value: {selected_row['displayed_value']}"
+                )
+                breakdown = selected_computed["breakdown"]
+                st.markdown(
+                    "\n".join(
+                        f"- **{factor}:** {points}/{weight}"
+                        for factor, points in breakdown.items()
+                        for weight in [CONFIDENCE_WEIGHTS.get(factor, 0)]
+                    )
+                )
+                if selected_computed["caps"]:
+                    st.caption("Safety cap applied: " + "; ".join(selected_computed["caps"]) + ".")
+                st.code(str(selected_row["source_snippet"] or "No source snippet available."), language=None)
+
+    with st.expander("Review / Correct Selected Figure", expanded=False):
+        review_ids = editable["id"].tolist()
+        if review_ids:
+            selected_review_id = st.selectbox(
+                "Figure row to review",
+                review_ids,
+                format_func=lambda figure_id: (
+                    f"#{figure_id} — "
+                    f"{editable.loc[editable['id'] == figure_id, 'raw_label'].iloc[0]} "
+                    f"({editable.loc[editable['id'] == figure_id, 'fiscal_year'].iloc[0]})"
+                ),
+                key=f"figure_review_selector_{document_id}",
+            )
+            selected_review_row = editable.loc[editable["id"] == selected_review_id].iloc[0]
+            status_options = [
+                "Ready for Quick Validation", "Needs Review", "Check Source",
+                "Reviewed", "Corrected", "Rejected",
+            ]
+            current_status = str(selected_review_row["review_status"] or "Needs Review")
+            with st.form(f"selected_figure_review_form_{document_id}_{selected_review_id}"):
+                selected_status = st.selectbox(
+                    "Review Status",
+                    status_options,
+                    index=status_options.index(current_status) if current_status in status_options else 1,
+                )
+                corrected_value = st.text_input(
+                    "Reviewed / Corrected Value",
+                    value=str(selected_review_row["reviewed_value"] or ""),
+                    placeholder=str(selected_review_row["displayed_value"] or ""),
+                )
+                if st.form_submit_button("Save Selected Figure Review", type="primary"):
+                    update_figure_reviews(document_id, [{
+                        "id": selected_review_id,
+                        "displayed_value": selected_review_row["displayed_value"],
+                        "reviewed_value": corrected_value,
+                        "review_status": selected_status,
+                    }])
+                    st.success("Selected figure review saved.")
+
     col1, col2 = st.columns([1, 4])
     with col1:
         if st.button("Save Corrections", type="primary"):
             # Map edits back using the original df index via id column
             records = edited.rename(columns={"conf_display": "confidence"}).to_dict("records")
-            # Restore raw confidence from original df for DB writes
-            conf_map = dict(zip(df["id"], df["confidence"]))
+            stored_by_id = {row["id"]: row for row in figures}
+            computed_status_by_id = dict(zip(editable["id"], editable["computed_review_status"]))
             for r in records:
-                r["confidence"] = conf_map.get(r["id"], r.get("confidence"))
+                original = stored_by_id.get(r["id"], {})
+                if (
+                    not original.get("reviewer_edited")
+                    and r.get("review_status") == computed_status_by_id.get(r["id"])
+                    and original.get("review_status") != r.get("review_status")
+                ):
+                    r["review_status"] = original.get("review_status") or r["review_status"]
             update_figure_reviews(document_id, records)
             st.success("Figure review updates saved.")
     with col2:
-        export_df = edited.drop(columns=["id"], errors="ignore")
+        export_columns = [
+            "page_number", "statement_type", "raw_label", "normalized_label",
+            "fiscal_year", "year_role", "displayed_value", "normalized_peso_value",
+            "unit_basis", "source_snippet", "computed_confidence_score",
+            "confidence_classification", "review_status", "reviewer_edited", "reviewed_value",
+        ]
+        export_df = editable[export_columns].copy()
         dataframe_download(export_df, f"sec_efast_figures_document_{document_id}.csv", "Export Figures CSV")
 
     st.subheader("Normalized Figure Buckets")

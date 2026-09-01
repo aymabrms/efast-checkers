@@ -1,6 +1,7 @@
 import re
 from typing import Dict, List
 
+from confidence import calculate_figure_confidence
 from normalization import detect_unit_basis, normalize_label, parse_amount, validate_numeric_string
 
 MANDATORY_LABELS = [
@@ -46,7 +47,7 @@ def extract_figures_from_pages(pages: List[Dict], fiscal_years: List[int]) -> Li
                     numeric_candidate = displayed.rstrip(".,;:")
                     numeric_safe, numeric_note = validate_numeric_string(numeric_candidate)
                     source_end = label_match.end() + year_match.end()
-                    results.append({
+                    figure = {
                         "page_number": page.get("page_number"),
                         "statement_type": page.get("page_type", "Other / Unclassified"),
                         "raw_label": label_match.group(1),
@@ -56,10 +57,19 @@ def extract_figures_from_pages(pages: List[Dict], fiscal_years: List[int]) -> Li
                         "normalized_peso_value": parse_amount(numeric_candidate, unit_basis) if numeric_safe else None,
                         "unit_basis": unit_basis,
                         "source_snippet": text[max(0, label_match.start() - 45):source_end + 45],
-                        "status": "Needs Review" if numeric_safe else "Check Source",
                         "review_note": numeric_note,
-                        "confidence": 0.82,
+                        "_mandatory_labels": MANDATORY_LABELS,
+                    }
+                    computed = calculate_figure_confidence(figure, page)
+                    figure.update({
+                        "status": computed["initial_review_status"],
+                        "review_status": computed["initial_review_status"],
+                        "confidence": computed["score"] / 100,
+                        "computed_confidence_score": computed["score"],
+                        "confidence_classification": computed["classification"],
+                        "confidence_breakdown": computed["breakdown"],
                     })
+                    results.append(figure)
     return results
 
 

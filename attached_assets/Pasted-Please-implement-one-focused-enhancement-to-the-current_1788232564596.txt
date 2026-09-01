@@ -1,0 +1,382 @@
+Please implement one focused enhancement to the current SEC eFAST Checkers prototype:
+
+COMPUTED CONFIDENCE + HITL V1
+
+IMPORTANT:
+- Inspect the current implementation first
+- Keep this low-risk and low-credit
+- Do NOT redesign the application
+- Do NOT add OCR, spaCy/NLP, ML models, external APIs, or new dependencies
+- Do NOT modify GIS, Historical View, Rankings, AFS completeness rules, demo seeding, or Test Upload Management
+- Preserve Multi-Year AFS Support V1
+- Reuse current extraction/page-analysis data
+- Generate the requested validation MD file
+- Stop after this scope
+
+GOAL
+
+Replace unexplained/fixed extracted-figure confidence with an explainable RULE-BASED confidence score using evidence already available in the current prototype.
+
+The score must support Human-in-the-Loop routing.
+
+This is NOT:
+- an ML probability;
+- an OCR confidence score;
+- an automatic acceptance/reversion decision.
+
+--------------------------------------------------
+1. CREATE ONE SHARED CONFIDENCE CALCULATOR
+--------------------------------------------------
+
+Create one reusable helper/function for extracted-figure confidence.
+
+Prefer an existing appropriate module or a small helper module.
+
+Score range:
+0–100
+
+Use only evidence that CURRENTLY exists in the prototype.
+
+Recommended weights:
+
+A. Source Page Quality — 20 points
+
+Use existing page-analysis quality/readability/text-length information.
+
+Suggested:
+- Readable / strong usable text = 20
+- moderate / warning quality = 12
+- low-text / poor readability = 5
+- extraction failure / unusable evidence = 0
+
+Do not invent OCR confidence because OCR is not implemented yet.
+
+B. Financial Label Match — 25 points
+
+Evaluate how reliably the raw financial label maps to the normalized field.
+
+Suggested:
+- exact supported label = 25
+- configured alias / strong mapped variation = 20
+- weaker normalized match = 12
+- ambiguous / unsupported = 0
+
+Use the existing label mapping/extraction rules.
+Do not introduce ML similarity.
+
+C. Fiscal Year Association — 20 points
+
+Use the multi-year extraction evidence.
+
+Suggested:
+- selected fiscal year explicitly associated with the extracted value = 20
+- year association is present but less direct = 12
+- uncertain = 5
+- no reliable year association = 0
+
+Important:
+2025, 2024, and 2023 rows must be scored independently.
+
+D. Numeric Parse Quality — 20 points
+
+Suggested:
+- clean, safely parsed value = 20
+- safely normalized after normal formatting cleanup = 15
+- suspicious / ambiguous numeric formatting = 0
+
+Existing Check Source behavior for malformed values such as:
+
+6.837.912.90
+A8849,399.68
+
+must remain.
+
+Do NOT automatically repair ambiguous values.
+
+E. Unit Basis Certainty — 10 points
+
+Suggested:
+- explicit unit basis such as Pesos / Thousands = 10
+- reliably inherited from page/report context = 7
+- default/inferred = 3
+- unknown = 0
+
+Use only currently available evidence.
+
+F. Source Evidence / Snippet — 5 points
+
+Suggested:
+- useful source snippet containing label/year/value context = 5
+- partial context = 2
+- no useful evidence = 0
+
+Total = 100.
+
+If current code cannot support one of these distinctions reliably,
+implement the closest deterministic equivalent and document the exact behavior.
+Do NOT fabricate signals merely to reach 100.
+
+--------------------------------------------------
+2. HARD SAFETY CAPS
+--------------------------------------------------
+
+Apply these safeguards after calculating the raw score:
+
+- suspicious numeric formatting:
+  maximum confidence = 49
+
+- normalized value is NULL because parsing is unsafe:
+  maximum confidence = 49
+
+- source page has failed/very poor readability:
+  maximum confidence = 69
+
+Clearly document any other necessary cap.
+
+Do not use confidence to manufacture missing values.
+
+--------------------------------------------------
+3. CONFIDENCE CLASSIFICATION
+--------------------------------------------------
+
+Use:
+
+HIGH
+90–100
+
+MEDIUM
+75–89
+
+LOW
+0–74
+
+Display examples:
+
+94% · High
+83% · Medium
+46% · Low
+
+Use professional reviewer-oriented language.
+
+--------------------------------------------------
+4. HITL ROUTING
+--------------------------------------------------
+
+Map confidence to an INITIAL review status:
+
+HIGH:
+"Ready for Quick Validation"
+
+MEDIUM:
+"Needs Review"
+
+LOW:
+"Check Source"
+
+Important:
+
+- Every result still remains reviewable by a human.
+- High confidence must NOT automatically Accept a filing.
+- Low confidence must NOT automatically Revert a filing.
+- Final reviewer disposition remains unchanged.
+- Existing suspicious-number Check Source rules take precedence.
+
+If a reviewer has already edited/corrected a figure:
+- do not silently overwrite the reviewed value;
+- preserve reviewer edits.
+
+--------------------------------------------------
+5. EXPLAINABILITY
+--------------------------------------------------
+
+In AFS Figures Extraction Review, provide a compact way to show WHY the confidence was assigned.
+
+Keep this lightweight.
+
+For example, a short breakdown such as:
+
+Computed Confidence: 86% · Medium
+
+- Page Quality: 20/20
+- Label Match: 20/25
+- Fiscal Year: 20/20
+- Numeric Parse: 20/20
+- Unit Basis: 3/10
+- Source Evidence: 3/5
+
+This may be:
+- an expander;
+- a compact text column;
+- or another simple display.
+
+Do not make the main figure table excessively wide.
+
+--------------------------------------------------
+6. TERMINOLOGY
+--------------------------------------------------
+
+Replace presentation wording such as:
+
+"Estimated Confidence"
+
+with:
+
+"Computed Confidence"
+
+and add a short note:
+
+"Confidence is calculated from deterministic prototype rules and is not an ML probability."
+
+If legacy seeded confidence values still exist in the database,
+the displayed confidence for review should use the new calculator where sufficient current evidence exists.
+
+Do not falsely describe historical hardcoded values as computed.
+
+--------------------------------------------------
+7. MULTI-YEAR COMPATIBILITY
+--------------------------------------------------
+
+Verify confidence independently for:
+
+- Current year
+- Comparative Year 1
+- Comparative Year 2
+
+Example:
+
+Total Assets | 2025 | 94% High
+Total Assets | 2024 | 88% Medium
+Total Assets | 2023 | 78% Medium
+
+Do not reuse one fiscal year's confidence for another year merely because the normalized label is the same.
+
+--------------------------------------------------
+8. EXPORT
+--------------------------------------------------
+
+Ensure the review/export data retains:
+
+- fiscal_year
+- computed confidence score
+- confidence classification
+- review status
+
+If the existing export can be extended safely.
+
+Do not redesign the CSV format beyond adding these useful fields.
+
+--------------------------------------------------
+9. TEST SCENARIOS
+--------------------------------------------------
+
+Test:
+
+A. Clean figure with:
+- readable page
+- exact label
+- explicit year
+- valid number
+- explicit unit
+Expected:
+High confidence.
+
+B. Valid figure but unit is inferred
+Expected:
+score lower than otherwise identical explicit-unit figure.
+
+C. Weak label variation but valid number/year
+Expected:
+Medium or appropriately reduced confidence.
+
+D. Suspicious value:
+6.837.912.90
+Expected:
+Low confidence / Check Source
+normalized value remains NULL where unsafe.
+
+E. Suspicious value:
+A8849,399.68
+Expected:
+Low confidence / Check Source
+no automatic correction.
+
+F. Low-quality source page with otherwise valid figure
+Expected:
+confidence capped appropriately and routed to review.
+
+G. Same normalized label for:
+2025 / 2024 / 2023
+Expected:
+each row receives its own independently calculated confidence.
+
+H. Reviewer-corrected figure
+Expected:
+reviewed value remains preserved.
+
+I. Existing 3 demo documents
+Expected:
+remain intact and usable.
+
+J. Final reviewer disposition
+Expected:
+confidence routing does not automatically Accept or Revert the document.
+
+--------------------------------------------------
+10. CREATE VALIDATION MD
+--------------------------------------------------
+
+Create:
+
+docs/COMPUTED_CONFIDENCE_HITL_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. Exact files changed
+3. Exact confidence formula and weights
+4. Exact evidence used for each factor
+5. Safety caps
+6. High / Medium / Low thresholds
+7. HITL routing rules
+8. Explainability UI behavior
+9. Multi-year behavior
+10. Reviewer correction behavior
+11. Export behavior
+12. Test results A-J:
+
+Scenario | Expected | Actual | Pass/Fail
+
+13. Demo-data impact
+14. Known limitations
+15. Explicit confirmation that:
+    - this is deterministic/rule-based
+    - it is NOT an ML probability
+    - OCR confidence is NOT used because OCR is not implemented yet
+
+16. Final assessment:
+    - Safe for prototype testing
+    - Needs minor refinement
+    - Requires correction
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Exact files changed
+2. Final confidence formula
+3. Thresholds and HITL routing
+4. Test results A-J
+5. Any schema/database change
+6. Whether seeded confidence fields remain but are superseded in the UI
+7. Confirmation reviewer corrections remain intact
+8. Confirmation Multi-Year AFS Support still works
+9. Confirmation Test Upload Management still works
+10. Confirmation this file was created:
+
+docs/COMPUTED_CONFIDENCE_HITL_V1_VALIDATION.md
+
+11. Confirmation app still runs
+
+STOP after this scope.
