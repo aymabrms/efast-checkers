@@ -1,0 +1,84 @@
+Please perform one very small ENVIRONMENT-ONLY task for the current SEC eFAST Checkers prototype.
+
+Goal:
+Resolve the package-manager issue that prevents installing spaCy because deprecated `fitz` is being appended even though the project correctly uses `pymupdf`.
+
+IMPORTANT:
+- Do NOT modify application logic
+- Do NOT implement NLP yet
+- Do NOT modify OCR, validation, extraction, confidence, UI, database, or demo data
+- Keep this extremely small and low-credit
+- Stop immediately after verifying the environment
+- Generate a validation MD file
+
+Please inspect only relevant dependency/environment files such as:
+- requirements.txt
+- pyproject.toml if present
+- uv.lock / poetry files if present
+- .replit
+- replit.nix if present
+- any package-manager configuration actually used
+
+Current problem:
+Installing spaCy causes the package manager to attempt:
+
+pip install spacy fitz
+
+or:
+
+pip install spacy pymupdf fitz
+
+The deprecated `fitz` PyPI distribution fails installation.
+
+The application should continue using:
+pymupdf
+
+The Python import:
+import fitz
+
+is supplied by PyMuPDF and must NOT require the deprecated `fitz` package.
+
+Tasks:
+
+1. Find why the environment/package manager thinks `fitz` must be installed separately.
+
+2. Correct only that dependency mapping/configuration if it can be done safely.
+
+3. Preserve PyMuPDF.
+
+4. Install only the minimum spaCy package needed.
+
+5. Do NOT download any pretrained language model.
+
+6. Verify:
+
+import fitz
+import spacy
+
+nlp = spacy.blank("en")
+
+All three must succeed.
+
+7. Verify the existing Streamlit app still starts.
+
+If resolving this would require a risky dependency rewrite or large environment change:
+STOP and leave the application unchanged.
+
+Create:
+
+docs/SPACY_ENVIRONMENT_VALIDATION.md
+
+Include:
+- root cause found
+- files changed
+- dependency correction made
+- installed spaCy version, if successful
+- PyMuPDF/fitz verification
+- `spacy.blank("en")` verification
+- app startup verification
+- final status:
+  - Ready for P2-B
+  - Still blocked
+
+STOP after this environment task.
+Do not implement NLP-Assisted Evidence Extraction yet.
