@@ -12,6 +12,7 @@ from db import (
     save_reviewer_action,
 )
 from extraction_engine import extract_figures_from_pages, fiscal_year_candidates
+from validation_engine import analyze_pages, validate_document
 
 
 def load_json(path: Path):
@@ -107,6 +108,8 @@ def seed_company_master() -> None:
 
 def _backfill_demo_comparative_figures(document_id: int, metadata: Dict) -> None:
     """Persist only comparative rows explicitly recoverable from seeded page text."""
+    if str(metadata.get("report_type") or "").upper() != "AFS":
+        return
     pages = get_pages(document_id)
     existing_figures = get_figures(document_id)
     existing_keys = {
@@ -182,22 +185,29 @@ def _seed_one_demo_document(entry: Dict) -> int:
     else:
         document_id = insert_document(metadata)
 
-    pages = []
-    for page in entry["pages"]:
-        text = page["text_preview"]
-        pages.append({
-            **page,
-            "detected_company_match": metadata["company_name"].replace(",", "")[:18].lower()
-                in text.replace(",", "").lower(),
-            "detected_period_match": str(metadata["period_covered_year"]) in text,
-        })
-    replace_document_analysis(document_id, pages, entry["validations"], entry["figures"])
+    if str(metadata.get("report_type") or "").upper() == "GIS":
+        pages = analyze_pages(entry["pages"], metadata, load_company_master())
+        validations = validate_document(pages, metadata, load_company_master())
+        figures = []
+    else:
+        pages = []
+        for page in entry["pages"]:
+            text = page["text_preview"]
+            pages.append({
+                **page,
+                "detected_company_match": metadata["company_name"].replace(",", "")[:18].lower()
+                    in text.replace(",", "").lower(),
+                "detected_period_match": str(metadata["period_covered_year"]) in text,
+            })
+        validations = entry["validations"]
+        figures = entry["figures"]
+    replace_document_analysis(document_id, pages, validations, figures)
     _backfill_demo_comparative_figures(document_id, metadata)
 
     existing_action = query(
         "SELECT id FROM reviewer_actions WHERE document_id = ?", (document_id,)
     )
-    if not existing_action:
+    if entry.get("seed_default_action", True) and not existing_action:
         save_reviewer_action(
             document_id,
             entry.get("default_remarks", ""),
@@ -208,12 +218,21 @@ def _seed_one_demo_document(entry: Dict) -> int:
     return document_id
 
 
-def ensure_demo_document() -> int:
-    """Seed the primary demo document (Audentia Fortuna). Kept for backward compat."""
+def ensure_demo_document(report_type: str = "AFS") -> int:
+    """Seed the first configured demo document for the requested report type."""
     demo = load_demo_data()
     suite = demo.get("demo_suite", [])
     if suite:
-        return _seed_one_demo_document(suite[0])
+        normalized_report_type = str(report_type or "AFS").upper()
+        matching_entry = next(
+            (
+                entry for entry in suite
+                if str(entry.get("metadata", {}).get("report_type") or "").upper()
+                == normalized_report_type
+            ),
+            suite[0],
+        )
+        return _seed_one_demo_document(matching_entry)
     metadata = demo["demo_document"]
     existing = query(
         "SELECT id FROM documents WHERE filename = ? ORDER BY id DESC LIMIT 1",

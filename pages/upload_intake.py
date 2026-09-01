@@ -27,7 +27,14 @@ def render():
     with col1:
         company_name = st.text_input("Company Name", DEFAULT_COMPANY)
         sec_no = st.text_input("SEC Registration Number", "")
-        report_type = st.selectbox("Report Type", ["AFS", "GIS"], index=0)
+        context = st.session_state.get("review_context", DEFAULT_REPORT_TYPE)
+        if "intake_report_type" not in st.session_state:
+            st.session_state["intake_report_type"] = context
+        report_type = st.selectbox(
+            "Report Type",
+            ["AFS", "GIS"],
+            key="intake_report_type",
+        )
         if report_type == "AFS":
             period_year = st.number_input(
                 "Period Covered Year",
@@ -219,9 +226,9 @@ def render():
                 st.success(f"Document #{document_id} saved and analyzed.")
 
     if st.button("Load Demo Document", type="primary"):
-        document_id = ensure_demo_document()
+        document_id = ensure_demo_document(report_type)
         st.session_state["active_document_id"] = document_id
-        st.success(f"Demo document #{document_id} loaded for Audentia Fortuna Holdings, Inc.")
+        st.success(f"{report_type} demo document #{document_id} loaded for Audentia Fortuna Holdings, Inc.")
 
     _render_test_uploads()
     st.info("Uploaded files are saved in the local uploads folder. Metadata and reviewer work are stored in SQLite.")

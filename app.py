@@ -9,7 +9,7 @@ import pages.historical_company as historical_company
 import pages.rankings as rankings
 import pages.settings_demo_data as settings_demo_data
 import pages.upload_intake as upload_intake
-from storage import ensure_all_demo_documents, seed_company_master
+from storage import ensure_all_demo_documents, get_document, get_documents, is_demo_document, seed_company_master
 
 PAGES = {
     "Dashboard": dashboard.render,
@@ -18,10 +18,19 @@ PAGES = {
     "AFS Figures Extraction Review": figures_review.render,
     "Historical Company View": historical_company.render,
     "Rankings / Research View": rankings.render,
-    "Settings / Editable Demo Data": settings_demo_data.render,
+    "Demo Data & Configuration": settings_demo_data.render,
 }
 
-PAGE_NAMES = list(PAGES.keys())
+AFS_NAV = [
+    ("Upload / Intake", "Upload / Intake"),
+    ("Document Review", "Document Review"),
+    ("Figures Extraction Review", "AFS Figures Extraction Review"),
+    ("Historical Company View", "Historical Company View"),
+]
+GIS_NAV = [
+    ("Upload / Intake", "Upload / Intake"),
+    ("Document Review", "Document Review"),
+]
 
 
 def apply_styles():
@@ -31,6 +40,20 @@ def apply_styles():
         .stApp { background: linear-gradient(180deg, #f3f7f4 0%, #f8faf8 42%, #ffffff 100%); }
         section[data-testid="stSidebar"] { background: #0d4f39; }
         section[data-testid="stSidebar"] * { color: #ffffff !important; }
+        section[data-testid="stSidebar"] .stButton button {
+            background: rgba(255, 255, 255, .08);
+            border-color: rgba(255, 255, 255, .24);
+            justify-content: flex-start;
+        }
+        section[data-testid="stSidebar"] .stButton button:disabled {
+            background: #ffffff;
+            border-color: #ffffff;
+            opacity: 1;
+        }
+        section[data-testid="stSidebar"] .stButton button:disabled,
+        section[data-testid="stSidebar"] .stButton button:disabled * {
+            color: #0d4f39 !important;
+        }
         [data-testid="stSidebarNav"] { display: none !important; }
         .main .block-container { padding-top: 1.5rem; max-width: 1440px; }
         .metric-card { background: #fff; border: 1px solid #dfe9e3; border-radius: 16px; padding: 1rem; min-height: 122px; box-shadow: 0 10px 24px rgba(19, 42, 31, .07); }
@@ -56,6 +79,70 @@ def bootstrap():
         st.session_state["active_document_id"] = ensure_all_demo_documents()
 
 
+def _navigate(page: str, context: str = None) -> None:
+    st.session_state["_current_page"] = page
+    if context:
+        st.session_state["review_context"] = context
+        if page == "Upload / Intake":
+            st.session_state["intake_report_type"] = context
+    st.rerun()
+
+
+def _sidebar_nav_button(label: str, page: str, context: str = None) -> None:
+    active = (
+        st.session_state.get("_current_page") == page
+        and (context is None or st.session_state.get("review_context") == context)
+    )
+    if st.sidebar.button(
+        label,
+        key=f"nav_{context or 'main'}_{page}",
+        type="primary" if active else "secondary",
+        use_container_width=True,
+        disabled=active,
+    ):
+        _navigate(page, context)
+
+
+def _render_sidebar_navigation() -> None:
+    st.sidebar.markdown("**MAIN**")
+    _sidebar_nav_button("Dashboard", "Dashboard")
+
+    st.sidebar.markdown("**AFS REPORTS**")
+    for label, page in AFS_NAV:
+        _sidebar_nav_button(label, page, "AFS")
+
+    st.sidebar.markdown("**GIS REPORTS**")
+    for label, page in GIS_NAV:
+        _sidebar_nav_button(label, page, "GIS")
+
+    st.sidebar.markdown("**RESEARCH**")
+    _sidebar_nav_button("Rankings / Research View", "Rankings / Research View")
+
+    st.sidebar.markdown("**PROTOTYPE ADMIN**")
+    _sidebar_nav_button("Demo Data & Configuration", "Demo Data & Configuration")
+
+
+def _render_demo_documents() -> None:
+    st.sidebar.divider()
+    st.sidebar.markdown("**DEMO DOCUMENTS**")
+    demo_documents = [document for document in get_documents() if is_demo_document(document)]
+    afs_documents = [document for document in demo_documents if document.get("report_type") == "AFS"]
+    gis_documents = [document for document in demo_documents if document.get("report_type") == "GIS"]
+    if afs_documents:
+        st.sidebar.caption("AFS")
+        for document in afs_documents:
+            st.sidebar.write(
+                f"• {document['company_name']} — {document['period_covered_year']}"
+            )
+    if gis_documents:
+        st.sidebar.caption("GIS")
+        for document in gis_documents:
+            corporation_type = document.get("corporation_type") or "GIS"
+            st.sidebar.write(
+                f"• {document['company_name']} — {document['period_covered_year']} {corporation_type} GIS"
+            )
+
+
 def main():
     st.set_page_config(page_title=APP_TITLE, layout="wide")
     apply_styles()
@@ -65,28 +152,23 @@ def main():
 
     # Support programmatic navigation (e.g. "Open in Review" from Dashboard)
     nav_to = st.session_state.pop("_nav_to", None)
-    default_index = PAGE_NAMES.index(nav_to) if nav_to and nav_to in PAGE_NAMES else 0
-    # If we navigated programmatically, keep the radio in sync by storing the selection
-    if "_current_page" not in st.session_state:
-        st.session_state["_current_page"] = PAGE_NAMES[default_index]
+    if nav_to and nav_to == "Settings / Editable Demo Data":
+        nav_to = "Demo Data & Configuration"
     if nav_to:
         st.session_state["_current_page"] = nav_to
+        if nav_to == "Document Review":
+            active_document = get_document(st.session_state.get("active_document_id"))
+            if active_document and active_document.get("report_type") in {"AFS", "GIS"}:
+                st.session_state["review_context"] = active_document["report_type"]
+    if "_current_page" not in st.session_state:
+        st.session_state["_current_page"] = "Dashboard"
+    if "review_context" not in st.session_state:
+        st.session_state["review_context"] = "AFS"
 
-    page = st.sidebar.radio(
-        "Navigation",
-        PAGE_NAMES,
-        index=PAGE_NAMES.index(st.session_state["_current_page"]),
-        key="nav_radio",
-    )
-    st.session_state["_current_page"] = page
+    _render_sidebar_navigation()
+    _render_demo_documents()
 
-    st.sidebar.divider()
-    st.sidebar.caption("Demo documents")
-    st.sidebar.write("Audentia Fortuna Holdings, Inc.")
-    st.sidebar.write("Malaya Northstar Manufacturing Corp.")
-    st.sidebar.write("Haraya Logistics and Trade, Inc.")
-
-    PAGES[page]()
+    PAGES[st.session_state["_current_page"]]()
 
 
 if __name__ == "__main__":

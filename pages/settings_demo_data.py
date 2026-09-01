@@ -12,7 +12,7 @@ def render_json(title, data):
 
 
 def render():
-    st.header("Settings / Editable Demo Data")
+    st.header("Demo Data & Configuration")
     st.caption("Reference guide for the demo content files that control presentation values in this prototype.")
 
     st.info(
@@ -37,7 +37,11 @@ def render():
     render_json("Current Label Mapping", json.loads(LABEL_MAPPING_PATH.read_text()))
 
     demo = load_demo_data()
+    suite = demo.get("demo_suite", [])
+    afs_demo_count = sum(entry.get("metadata", {}).get("report_type") == "AFS" for entry in suite)
+    gis_demo_count = sum(entry.get("metadata", {}).get("report_type") == "GIS" for entry in suite)
     st.subheader("Demo Dataset Summary")
+    st.write(f"Seeded demo documents: {len(suite)} ({afs_demo_count} AFS, {gis_demo_count} GIS)")
     st.write(f"Sample pages: {len(demo['sample_pages'])}")
     st.write(f"Sample extracted figure rows: {len(demo['sample_figures'])}")
     st.write(f"Historical years: {len(demo['historical_data'])}")

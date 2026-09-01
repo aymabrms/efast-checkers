@@ -214,22 +214,36 @@ def _render_gis_completeness_check(pages, document):
 
 def render():
     st.header("Document Review")
-    st.caption("Reviewer view for page classification, text evidence, period checks, suggested revert reasons, and final recommendation.")
+    context = st.session_state.get("review_context", "AFS")
+    st.caption(
+        f"{context} reviewer view for page classification, text evidence, period checks, "
+        "suggested revert reasons, and final recommendation."
+    )
 
-    documents = get_documents()
+    documents = [
+        document for document in get_documents()
+        if str(document.get("report_type") or "").upper() == context
+    ]
 
     # Resolve active document — prefer session state, fall back to selector
     active_id = st.session_state.get("active_document_id")
+    active_document = next(
+        (document for document in documents if document["id"] == active_id),
+        None,
+    )
+    if active_id and not active_document:
+        active_id = None
+        st.session_state["active_document_id"] = None
     if not active_id:
-        active_id = show_document_selector(documents, "doc_review_selector")
+        active_id = show_document_selector(documents, f"doc_review_selector_{context.lower()}")
         if not active_id:
             return
         st.session_state["active_document_id"] = active_id
     else:
         with st.expander("Switch document", expanded=False):
-            switched_id = show_document_selector(documents, "doc_review_switcher")
+            switched_id = show_document_selector(documents, f"doc_review_switcher_{context.lower()}")
             if switched_id and switched_id != active_id:
-                if st.button("Load selected document", key="doc_review_switch_btn"):
+                if st.button("Load selected document", key=f"doc_review_switch_btn_{context.lower()}"):
                     st.session_state["active_document_id"] = switched_id
                     st.rerun()
 

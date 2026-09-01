@@ -2,16 +2,8 @@ import pandas as pd
 import streamlit as st
 
 from db import query
-from storage import get_documents
+from storage import get_documents, is_demo_document
 from ui_helpers import format_timestamp_pst, metric_card, recommendation_badge, status_badge
-
-# Filenames that belong to seeded demo documents
-_DEMO_FILENAMES = {
-    "audentia_fortuna_afs_2025_demo.pdf",
-    "malaya_northstar_afs_2025_demo.pdf",
-    "haraya_logistics_afs_2024_demo.pdf",
-}
-
 
 def render():
     st.header("Dashboard")
@@ -59,11 +51,12 @@ def render():
         rows = []
         for doc in documents:
             rec = rec_by_doc.get(doc["id"], "")
-            source = "Demo" if doc.get("filename", "") in _DEMO_FILENAMES else "Uploaded"
+            source = "Demo" if is_demo_document(doc) else "Uploaded"
             rows.append({
                 "ID": doc["id"],
                 "Company Name": doc["company_name"],
                 "SEC Registration No.": doc["sec_registration_no"],
+                "Report Type": doc["report_type"],
                 "Period Covered Year": doc["period_covered_year"],
                 "Submission Type": doc["submission_type"],
                 "Recommendation": rec or "—",
@@ -80,6 +73,7 @@ def render():
                 "ID": st.column_config.NumberColumn("ID", width="small"),
                 "Company Name": st.column_config.TextColumn("Company Name"),
                 "SEC Registration No.": st.column_config.TextColumn("SEC Registration No."),
+                "Report Type": st.column_config.TextColumn("Report Type", width="small"),
                 "Period Covered Year": st.column_config.NumberColumn("Period", width="small"),
                 "Submission Type": st.column_config.TextColumn("Submission Type", width="medium"),
                 "Recommendation": st.column_config.TextColumn("Recommendation", width="medium"),
@@ -105,7 +99,7 @@ def render():
 
         st.markdown("**Open a document for review:**")
         doc_labels = {
-            f"#{doc['id']} — {doc['company_name']} — {doc['period_covered_year']}": doc
+            f"#{doc['id']} — {doc['company_name']} — {doc['period_covered_year']} {doc['report_type']}": doc
             for doc in documents
         }
         col_sel, col_btn = st.columns([4, 1])

@@ -7,7 +7,7 @@ from confidence import CONFIDENCE_WEIGHTS, calculate_figure_confidence
 from db import update_figure_reviews
 from extraction_engine import MANDATORY_LABELS, fiscal_year_candidates
 from storage import get_document, get_documents, get_figures, get_pages
-from ui_helpers import dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
+from ui_helpers import clean_source_snippet, dataframe_download, format_peso, metric_card, reviewing_banner, show_document_selector
 
 REVENUE_LABELS = {"gross_revenue", "total_revenue", "revenue"}
 
@@ -56,10 +56,20 @@ def render():
     st.header("AFS Figures Extraction Review")
     st.caption("Hero workflow for structured extraction, reviewer correction, and database-ready AFS financial figures.")
 
-    documents = get_documents()
+    documents = [
+        document for document in get_documents()
+        if str(document.get("report_type") or "").upper() == "AFS"
+    ]
 
     # Resolve active document — prefer session state, fall back to selector
     active_id = st.session_state.get("active_document_id")
+    active_document = next(
+        (document for document in documents if document["id"] == active_id),
+        None,
+    )
+    if active_id and not active_document:
+        active_id = None
+        st.session_state["active_document_id"] = None
     if not active_id:
         active_id = show_document_selector(documents, "figures_doc_selector")
         if not active_id:
@@ -283,7 +293,15 @@ def render():
                 )
                 if selected_computed["caps"]:
                     st.caption("Safety cap applied: " + "; ".join(selected_computed["caps"]) + ".")
-                st.code(str(selected_row["source_snippet"] or "No source snippet available."), language=None)
+                source_page = pages_by_number.get(int(selected_row["page_number"])) or {}
+                st.code(
+                    clean_source_snippet(
+                        selected_row["source_snippet"],
+                        context=source_page.get("text_preview", ""),
+                        anchor=selected_row["raw_label"],
+                    ) or "No source snippet available.",
+                    language=None,
+                )
 
     with st.expander("Review / Correct Selected Figure", expanded=False):
         review_ids = editable["id"].tolist()

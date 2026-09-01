@@ -100,6 +100,37 @@ def show_document_selector(documents: List[Dict], key: str) -> Optional[int]:
     return id_by_label[selected]
 
 
+def clean_source_snippet(snippet: str, context: str = "", anchor: str = "", max_chars: int = 140) -> str:
+    """Clean a source excerpt for display without changing stored source text."""
+    source = str(context or snippet or "")
+    source = " ".join(source.split())
+    if not source:
+        return ""
+    anchor_index = -1
+    if anchor:
+        anchor_index = source.lower().find(str(anchor).lower())
+    if len(source) <= max_chars:
+        return source
+    start = max(0, anchor_index - 58) if anchor_index >= 0 else 0
+    if start > 0:
+        while start < len(source) and not source[start - 1].isspace():
+            start += 1
+    elif source[0].islower():
+        first_space = source.find(" ")
+        start = first_space + 1 if first_space >= 0 else 0
+    end = min(len(source), start + max_chars)
+    if end < len(source):
+        word_end = source.rfind(" ", start, end)
+        if word_end > start:
+            end = word_end
+    excerpt = source[start:end].strip()
+    if start > 0:
+        excerpt = "…" + excerpt
+    if end < len(source):
+        excerpt = excerpt.rstrip(" .,:;") + "…"
+    return excerpt
+
+
 def reviewing_banner(document: Optional[Dict]) -> None:
     """Render a persistent 'Currently Reviewing' card using native Streamlit layout."""
     if not document:

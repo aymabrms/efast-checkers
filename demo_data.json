@@ -211,6 +211,36 @@
       "default_recommendation": "Revert",
       "default_revert_reason": "Wrong company profile",
       "default_remarks": "Company name mismatch on key pages (Haraya Transport Services, Inc. vs. Haraya Logistics and Trade, Inc.). Period covered on Auditor's Report shows 2024, not 2025. Balance sheet page is unreadable. Recommend revert for re-submission."
+    },
+    {
+      "metadata": {
+        "filename": "audentia_fortuna_gis_2025_stock_demo.pdf",
+        "company_name": "Audentia Fortuna Holdings, Inc.",
+        "sec_registration_no": "CS202102938",
+        "report_type": "GIS",
+        "period_covered_year": 2025,
+        "comparative_years": "",
+        "submission_type": "Annual Meeting",
+        "filing_year": null,
+        "corporation_type": "Stock",
+        "period_covered": "2025-04-22"
+      },
+      "pages": [
+        {"page_number": 1, "page_type": "Corporate / Profile / Meeting Information", "orientation": "Portrait", "text_preview": "GENERAL INFORMATION SHEET FOR THE YEAR 2025. Corporate Name: Audentia Fortuna Holdings, Inc. SEC Registration Number CS202102938. Date of Annual Meeting per By-Laws: April 15, 2025. ACTUAL DATE OF ANNUAL MEETING: April 22, 2025. Principal office and business address: 100 Demo Avenue, Fictional City. Email and contact information: gis-demo@example.invalid.", "image_quality_flag": "Passed"},
+        {"page_number": 2, "page_type": "AMLA Information", "orientation": "Portrait", "text_preview": "AMLA INFORMATION. Anti-Money Laundering compliance information and beneficial ownership information for Audentia Fortuna Holdings, Inc. for the year 2025.", "image_quality_flag": "Passed"},
+        {"page_number": 3, "page_type": "Capital Structure", "orientation": "Portrait", "text_preview": "CAPITAL STRUCTURE. Authorized capital stock, subscribed capital stock, and paid-up capital details for Audentia Fortuna Holdings, Inc. for 2025. Synthetic reviewer demonstration text only.", "image_quality_flag": "Passed"},
+        {"page_number": 4, "page_type": "Directors / Officers", "orientation": "Portrait", "text_preview": "DIRECTORS AND OFFICERS. Names of the directors and names of the officers of Audentia Fortuna Holdings, Inc. for the 2025 reporting period. Synthetic reviewer demonstration entries.", "image_quality_flag": "Passed"},
+        {"page_number": 5, "page_type": "Stockholders' Information", "orientation": "Portrait", "text_preview": "STOCKHOLDERS' INFORMATION. Fictional stockholders and number of shares owned for Audentia Fortuna Holdings, Inc. Only one stockholders information page is included in this synthetic demo.", "image_quality_flag": "Passed"},
+        {"page_number": 6, "page_type": "Investments / Other Corporate Information", "orientation": "Portrait", "text_preview": "INVESTMENTS AND OTHER CORPORATE INFORMATION. Synthetic information concerning investments, treasury shares, retained earnings, dividends, additional shares, secondary licenses, and manpower for 2025.", "image_quality_flag": "Passed"},
+        {"page_number": 7, "page_type": "Corporate Secretary Attestation / Notarization", "orientation": "Portrait", "text_preview": "CORPORATE SECRETARY ATTESTATION. The Corporate Secretary hereby attests that the information in this synthetic GIS is presented for reviewer demonstration. SUBSCRIBED AND SWORN before a NOTARY PUBLIC. DOC. NO. 101; PAGE NO. 22; BOOK NO. IV; SERIES OF 2025. Signature and notarial-stamp appearance require visual confirmation.", "image_quality_flag": "Passed"},
+        {"page_number": 8, "page_type": "Beneficial Ownership Declaration", "orientation": "Portrait", "text_preview": "BENEFICIAL OWNERSHIP DECLARATION. Synthetic declaration page for Audentia Fortuna Holdings, Inc. for the 2025 GIS reviewer demonstration. This page is conditional and provided for reviewer-controlled routing only.", "image_quality_flag": "Passed"}
+      ],
+      "validations": [],
+      "figures": [],
+      "seed_default_action": false,
+      "default_recommendation": "Needs Review",
+      "default_revert_reason": "",
+      "default_remarks": ""
     }
   ]
 }

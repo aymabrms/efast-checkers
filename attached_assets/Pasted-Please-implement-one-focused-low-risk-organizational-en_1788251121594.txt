@@ -1,0 +1,523 @@
+Please implement one focused, low-risk organizational enhancement to the current SEC eFAST Checkers prototype:
+
+AFS / GIS WORKFLOW ORGANIZATION V1
+
+IMPORTANT:
+- Inspect the current codebase first.
+- Keep this credit-thrift and presentation-focused.
+- Do NOT redesign the validation engines.
+- Do NOT change AFS Completeness rules.
+- Do NOT change GIS Review Lite business rules.
+- Do NOT change BOD logic.
+- Do NOT change OCR, Computed Confidence, HITL, reviewer disposition, Historical View, Rankings, or database schema unless absolutely necessary for seeded demo data.
+- Do NOT add dependencies.
+- Do NOT duplicate existing review logic into separate AFS and GIS implementations.
+- Reuse the current shared Upload / Intake and Document Review modules with report-type context.
+- Create the requested validation MD.
+- STOP after this scope.
+
+==================================================
+OBJECTIVE
+==================================================
+
+Make the prototype visibly present two distinct reviewer workstreams:
+
+1. AFS Reports
+2. GIS Reports
+
+while continuing to use the existing shared technical framework underneath.
+
+Also add one protected fictional GIS demo document so GIS Review Lite can be demonstrated without requiring a real upload.
+
+Finally, improve source-snippet presentation in AFS Figures Extraction Review.
+
+==================================================
+1. REORGANIZE LEFT SIDEBAR NAVIGATION
+==================================================
+
+Replace the current flat navigation with grouped sections.
+
+Target structure:
+
+SEC eFAST Checkers
+GIS & AFS Reviewer Assistance Prototype
+
+MAIN
+
+Dashboard
+
+
+AFS REPORTS
+
+Upload / Intake
+
+Document Review
+
+Figures Extraction Review
+
+Historical Company View
+
+
+GIS REPORTS
+
+Upload / Intake
+
+Document Review
+
+
+RESEARCH
+
+Rankings / Research View
+
+
+PROTOTYPE ADMIN
+
+Demo Data & Configuration
+
+
+IMPORTANT:
+
+Do NOT build separate duplicate Upload / Intake or Document Review engines.
+
+AFS -> Upload / Intake
+must open the current shared intake module with:
+
+Report Type = AFS
+
+preselected.
+
+GIS -> Upload / Intake
+must open the same shared intake module with:
+
+Report Type = GIS
+
+preselected.
+
+AFS -> Document Review
+must open the existing shared Document Review page using an AFS context/filter.
+
+GIS -> Document Review
+must open the same shared Document Review page using a GIS context/filter.
+
+The reviewer should still be able to switch documents within the relevant report type.
+
+AFS Figures Extraction Review must remain AFS-only.
+
+Historical Company View remains AFS financial data only.
+
+Rankings / Research View remains based on AFS financial data.
+
+==================================================
+2. SESSION / NAVIGATION CONTEXT
+==================================================
+
+Use the smallest safe implementation.
+
+If navigation currently relies on session state, extend it rather than rebuilding routing.
+
+Suggested context values:
+
+review_context = "AFS"
+review_context = "GIS"
+
+or the closest equivalent consistent with current architecture.
+
+When entering an AFS navigation item:
+- preselect/filter AFS.
+
+When entering a GIS navigation item:
+- preselect/filter GIS.
+
+Do not permanently modify stored document metadata merely because navigation context changes.
+
+==================================================
+3. DEMO DOCUMENT LIST PRESENTATION
+==================================================
+
+The current sidebar contains a Demo documents list.
+
+Because the same fictional company may now have both AFS and GIS demo records, make the labels unambiguous.
+
+For example:
+
+DEMO DOCUMENTS
+
+AFS
+- Audentia Fortuna Holdings, Inc. — 2025
+- Malaya Northstar Manufacturing Corp. — 2025
+- Haraya Logistics and Trade, Inc. — 2025
+
+GIS
+- Audentia Fortuna Holdings, Inc. — 2025 Stock GIS
+
+or another compact equivalent.
+
+Do not show two identical company-name labels without indicating their report type.
+
+Preserve demo-record protection.
+
+==================================================
+4. ADD ONE PROTECTED GIS STOCK DEMO
+==================================================
+
+Add exactly ONE fictional GIS demo document.
+
+Use:
+
+Company:
+Audentia Fortuna Holdings, Inc.
+
+Use the existing fictional SEC Registration Number already associated with Audentia so the prototype can later demonstrate cross-report company consistency.
+
+Report Type:
+GIS
+
+Corporation Type:
+Stock
+
+Period Year:
+2025
+
+Submission Type:
+Annual Meeting
+
+Use one clear fictional Actual Date of Annual Meeting / Period Covered date.
+
+Do not use real company data.
+
+The GIS demo should be sufficient to demonstrate the already implemented GIS Review Lite functionality.
+
+Use synthetic/demo page text only.
+
+Suggested logical demo pages:
+
+Page 1
+Corporate / Profile / Meeting Information
+
+Include explicit evidence for:
+- GENERAL INFORMATION SHEET
+- FOR THE YEAR 2025
+- Audentia Fortuna Holdings, Inc.
+- SEC Registration Number
+- Date of Annual Meeting per By-Laws
+- ACTUAL DATE OF ANNUAL MEETING
+- principal/business address
+- email/contact information
+
+Page 2
+AMLA Information
+
+Page 3
+Capital Structure
+
+Page 4
+Directors / Officers
+
+Page 5
+Stockholders' Information
+
+Only one Stockholders page is required for this demo.
+
+Page 6
+Investments / Treasury Shares / Retained Earnings /
+Dividends / Additional Shares / Secondary Licenses /
+Manpower
+
+Page 7
+Corporate Secretary Attestation / Notarization
+
+Include deterministic text evidence such as:
+- Corporate Secretary
+- hereby attest
+- SUBSCRIBED AND SWORN
+- NOTARY PUBLIC
+- DOC. NO.
+- PAGE NO.
+- BOOK NO.
+- SERIES OF
+
+Do NOT claim signature or stamp authentication.
+
+Page 8
+Beneficial Ownership Declaration
+
+Include explicit:
+BENEFICIAL OWNERSHIP DECLARATION
+
+This should exercise the EXISTING conditional/legacy BOD handling.
+
+Expected:
+- BOD detected
+- BOD page shown
+- excluded from GIS completeness PASS/FAIL
+- reviewer-controlled routing page
+
+Do NOT include Annex A in this demo.
+
+Annex A should therefore demonstrate:
+Optional / Not Present
+
+and must not fail completeness.
+
+==================================================
+5. GIS DEMO EXPECTED REVIEW RESULT
+==================================================
+
+The new GIS demo should allow the reviewer to see:
+
+GIS Validation Results
+
+GIS Completeness Check
+
+Page Review
+
+Beneficial Ownership Declaration / Routing
+
+Reviewer Disposition
+
+Expected completeness:
+
+Corporate / Profile / Meeting Information = Detected
+AMLA Information = Detected
+Capital Structure = Detected
+Directors / Officers = Detected
+Stockholders' Information = Detected
+Investments / Other Corporate Information = Detected
+Corporate Secretary Attestation / Notarization = Detected
+
+Annex A = Optional / Not Present
+
+BOD = Conditional / Legacy — Detected
+
+The demo should be reviewable but should NOT automatically save an Accept disposition.
+
+Final recommendation remains reviewer-controlled.
+
+==================================================
+6. DO NOT FEED GIS INTO AFS FIGURES
+==================================================
+
+Very important regression safeguard:
+
+The seeded GIS document must NOT:
+
+- appear in AFS Figures Extraction Review;
+- create extracted financial figure rows;
+- appear in Historical Company View financial history;
+- appear in AFS financial Rankings;
+- change AFS normalized buckets.
+
+AFS and GIS may share company identity but must remain separate document/report records.
+
+==================================================
+7. POLISH SOURCE EVIDENCE SNIPPETS
+==================================================
+
+Current issue:
+
+A source snippet in AFS Figures Extraction Review may begin mid-word, for example:
+
+"s of Cash Flows Amounts in Philippine pesos..."
+
+This is presentation-only and should be cleaned up.
+
+Do NOT change the extracted financial value or extraction decision.
+
+Improve source-snippet formatting so:
+
+- snippets do not begin halfway through a word;
+- snippets do not end halfway through a word where practical;
+- cropped beginning/end uses an ellipsis:
+  "…"
+- surrounding whitespace is normalized;
+- enough context is shown to be useful to the reviewer.
+
+A reasonable display length is approximately 100–160 characters if compatible with current code.
+
+Example desired presentation:
+
+“…Statements of Cash Flows — Amounts in Philippine pesos. Net Cash Provided by Operating Activities 2025 371,250,000; 2024 289,400,000…”
+
+Do NOT fabricate text that does not exist in the stored source.
+
+This is display cleanup only.
+
+==================================================
+8. RENAME SETTINGS NAVIGATION LABEL
+==================================================
+
+Change the sidebar navigation label:
+
+Settings / Editable Demo Data
+
+to:
+
+Demo Data & Configuration
+
+Do not turn the page into a live editor.
+
+Its existing reference-only behavior may remain.
+
+If the page title can be safely renamed to:
+
+Demo Data & Configuration
+
+do so.
+
+Preserve the notice that configuration is reference-only if that is still true.
+
+==================================================
+9. DO NOT CHANGE YET
+==================================================
+
+Do NOT implement in this task:
+
+- Dashboard AFS/GIS filters
+- separate GIS dashboard charts
+- new GIS confidence formula
+- GIS value-level officer/stockholder validation
+- historical GIS analytics
+- real GIS PDF files
+- sample AFS PDF generation
+- live Historical View database integration
+- live Rankings integration
+- logo/branding artwork
+- NLP/spaCy
+- new OCR behavior
+
+==================================================
+10. TEST SCENARIOS
+==================================================
+
+Test:
+
+A. Sidebar grouping
+Expected:
+Main, AFS Reports, GIS Reports, Research,
+Prototype Admin are clearly separated.
+
+B. AFS Upload / Intake
+Expected:
+shared intake opens with AFS preselected.
+
+C. GIS Upload / Intake
+Expected:
+same intake engine opens with GIS preselected.
+
+D. AFS Document Review
+Expected:
+AFS review remains operational.
+
+E. GIS Document Review
+Expected:
+new seeded GIS demo can be opened and reviewed.
+
+F. Seeded GIS Stock completeness
+Expected:
+all required Stock components detected.
+
+G. Annex A
+Expected:
+Optional / Not Present and does not fail completeness.
+
+H. BOD
+Expected:
+Conditional / Legacy, detected on Page 8,
+excluded from completeness, routing remains reviewer-controlled.
+
+I. Corporate Secretary / Notarization
+Expected:
+component detected;
+visual signature/stamp confirmation remains required.
+
+J. AFS Figure isolation
+Expected:
+GIS demo does not appear in AFS Figures Extraction Review.
+
+K. Historical / Rankings isolation
+Expected:
+GIS demo does not affect AFS financial history/rankings.
+
+L. Source snippet
+Expected:
+no snippet begins mid-word;
+cropping uses ellipsis where necessary.
+
+M. Existing three AFS demos
+Expected:
+remain intact and protected.
+
+N. Existing AFS multi-year figures
+Expected:
+2025/2024 behavior remains unchanged.
+
+O. Test Upload Management
+Expected:
+temporary uploads still remain deletable;
+seeded GIS and AFS demos remain protected.
+
+P. Application startup
+Expected:
+app starts successfully with no new blocking errors.
+
+==================================================
+11. CREATE VALIDATION MD
+==================================================
+
+Create:
+
+docs/AFS_GIS_WORKFLOW_ORGANIZATION_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. Exact files changed
+3. Final sidebar/navigation hierarchy
+4. How shared AFS/GIS intake routing works
+5. How shared AFS/GIS Document Review routing works
+6. GIS seeded demo metadata
+7. GIS seeded demo page/component structure
+8. GIS completeness results
+9. Annex A behavior
+10. BOD behavior
+11. Corporate Secretary/notarization behavior
+12. Confirmation GIS is isolated from AFS Figures
+13. Confirmation GIS is isolated from Historical/Rankings
+14. Source-snippet root cause and display fix
+15. Demo Data & Configuration rename
+16. Test results A-P:
+
+Scenario | Expected | Actual | Pass/Fail
+
+17. Database/data changes
+18. Existing AFS demo impact
+19. Known limitations
+
+Final assessment:
+
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+
+==================================================
+OUTPUT
+==================================================
+
+After implementation, report:
+
+1. Exact files changed
+2. Final sidebar structure
+3. How AFS and GIS routes reuse shared modules
+4. GIS demo added
+5. GIS completeness/BOD result
+6. Source-snippet fix
+7. Test results A-P
+8. Confirmation no GIS figures were inserted into AFS data
+9. Confirmation existing AFS functionality remains intact
+10. Confirmation this file was created:
+
+docs/AFS_GIS_WORKFLOW_ORGANIZATION_V1_VALIDATION.md
+
+11. Confirmation app runs successfully
+
+STOP after this scope.
