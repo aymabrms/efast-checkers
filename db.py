@@ -172,6 +172,28 @@ def replace_document_analysis(document_id: int, pages: List[Dict], validations: 
     conn.close()
 
 
+def delete_document_records(document_id: int) -> bool:
+    """Delete one document and all dependent analysis/reviewer rows atomically."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("BEGIN")
+        for table in ["reviewer_actions", "extracted_figures", "validations", "page_analysis"]:
+            cur.execute(f"DELETE FROM {table} WHERE document_id = ?", (document_id,))
+        cur.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+        deleted = cur.rowcount > 0
+        if deleted:
+            conn.commit()
+        else:
+            conn.rollback()
+        return deleted
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def save_reviewer_action(document_id: int, remarks: str, recommendation: str, revert_reason: str) -> None:
     existing = query("SELECT id FROM reviewer_actions WHERE document_id = ?", (document_id,))
     if existing:

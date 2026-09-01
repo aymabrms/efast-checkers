@@ -1,0 +1,176 @@
+Please implement one small enhancement to the current SEC eFAST Checkers prototype:
+
+TEST UPLOAD MANAGEMENT V1
+
+IMPORTANT:
+- Inspect the current code first
+- Keep this low-risk and low-credit
+- Do NOT redesign the app
+- Do NOT modify validation, extraction, completeness, Historical View, Rankings, or reviewer logic
+- Do NOT change the 3 seeded demo records
+- Do NOT add OCR yet
+- Stop after this scope
+
+GOAL
+
+Allow temporary real/test PDF uploads to be reviewed and safely deleted after testing, while permanently protecting the 3 seeded demo documents.
+
+--------------------------------------------------
+1. PROTECT DEMO DOCUMENTS
+--------------------------------------------------
+
+The following demo records must never be deletable from this interface:
+
+- Audentia Fortuna Holdings, Inc.
+- Malaya Northstar Manufacturing Corp.
+- Haraya Logistics and Trade, Inc.
+
+Use the existing demo-identification logic if available.
+
+Do not identify protected records only by company name if a safer existing demo/source flag or filename mechanism exists.
+
+--------------------------------------------------
+2. ADD "TEST UPLOADS" SECTION
+--------------------------------------------------
+
+Add a compact section to Upload / Intake below the existing upload controls:
+
+"Test Uploads"
+
+Show only non-demo uploaded documents.
+
+Columns:
+
+- Company Name
+- Report Type
+- Period Covered
+- Analysis Status / Recommendation if available
+- Uploaded At
+- Action
+
+Each test upload should have:
+
+Delete
+
+Do not display Delete for seeded demo documents.
+
+--------------------------------------------------
+3. SAFE DELETE
+--------------------------------------------------
+
+When deleting a test document:
+
+Remove only records associated with that document_id from:
+
+- reviewer_actions
+- extracted_figures
+- validations
+- page_analysis
+- documents
+
+Also remove the locally uploaded PDF only if:
+- it belongs to that document; and
+- it is not referenced elsewhere.
+
+Use the safest deletion order supported by the current schema.
+
+Do not reset or reseed the database.
+
+--------------------------------------------------
+4. CONFIRMATION
+--------------------------------------------------
+
+Before deletion, require explicit confirmation.
+
+Example:
+
+"Delete this test upload and its analysis data?"
+
+Buttons:
+- Confirm Delete
+- Cancel
+
+After successful deletion:
+- show a success message
+- refresh the Test Uploads list
+- clear active_document_id if the deleted document was active
+
+--------------------------------------------------
+5. OPTIONAL CLEAR TEST DATA
+--------------------------------------------------
+
+Only if simple and safe:
+
+Add:
+
+"Clear All Test Uploads"
+
+with a second confirmation step.
+
+This must remove ONLY non-demo uploaded documents and their related records/files.
+
+If this adds too much complexity, skip it.
+
+--------------------------------------------------
+6. TEST
+--------------------------------------------------
+
+Verify:
+
+A. Upload a temporary PDF
+Expected:
+appears under Test Uploads.
+
+B. Delete temporary upload
+Expected:
+document and related analysis rows disappear.
+
+C. Delete active test document
+Expected:
+active document state clears safely.
+
+D. Seeded demo documents
+Expected:
+remain present and cannot be deleted.
+
+E. Restart app
+Expected:
+3 demo records remain intact.
+
+--------------------------------------------------
+7. CREATE VALIDATION MD
+--------------------------------------------------
+
+Create:
+
+docs/TEST_UPLOAD_MANAGEMENT_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. Files changed
+3. How demo documents are protected
+4. How test uploads are identified
+5. Delete behavior and related tables
+6. Uploaded-file cleanup behavior
+7. Test results A-E
+8. Known limitations
+9. Final assessment:
+   - Safe for prototype testing
+   - Needs minor refinement
+   - Requires correction
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Exact files changed
+2. What was implemented
+3. Test results
+4. Confirmation demo records remain protected
+5. Confirmation MD file was created
+6. Confirmation app still runs
+
+STOP after this scope.

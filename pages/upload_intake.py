@@ -4,7 +4,15 @@ from config import DEFAULT_COMPARATIVE_YEARS, DEFAULT_COMPANY, DEFAULT_FILING_YE
 from db import insert_document, replace_document_analysis
 from extraction_engine import extract_figures_from_pages, fiscal_year_candidates
 from pdf_utils import extract_pdf_pages, prepare_uploaded_file
-from storage import ensure_demo_document, load_company_master
+from storage import (
+    delete_test_document,
+    document_analysis_summary,
+    ensure_demo_document,
+    get_documents,
+    is_demo_document,
+    load_company_master,
+)
+from ui_helpers import format_timestamp_pst
 from validation_engine import analyze_pages, validate_document
 
 
@@ -110,4 +118,61 @@ def render():
         st.session_state["active_document_id"] = document_id
         st.success(f"Demo document #{document_id} loaded for Audentia Fortuna Holdings, Inc.")
 
+    _render_test_uploads()
     st.info("Uploaded files are saved in the local uploads folder. Metadata and reviewer work are stored in SQLite.")
+
+
+def _render_test_uploads():
+    st.subheader("Test Uploads")
+    st.caption("Temporary non-demo PDFs are listed here for review and safe cleanup.")
+
+    flash_message = st.session_state.pop("_test_upload_flash", None)
+    if flash_message:
+        st.success(flash_message)
+
+    test_uploads = [document for document in get_documents() if not is_demo_document(document)]
+    if not test_uploads:
+        st.info("No test uploads yet. Upload a PDF above to begin a temporary review.")
+        st.caption("Seeded demo documents are protected and are not listed here.")
+        return
+
+    header = st.columns([2.25, 1.0, 1.0, 1.7, 1.45, 0.8])
+    for column, label in zip(
+        header,
+        ["Company Name", "Report Type", "Period Covered", "Analysis Status / Recommendation", "Uploaded At", "Action"],
+    ):
+        column.markdown(f"**{label}**")
+
+    pending_id = st.session_state.get("_pending_test_upload_delete_id")
+    for document in test_uploads:
+        document_id = document["id"]
+        row = st.columns([2.25, 1.0, 1.0, 1.7, 1.45, 0.8])
+        row[0].write(document.get("company_name") or "—")
+        row[1].write(document.get("report_type") or "—")
+        row[2].write(document.get("period_covered_year") or "—")
+        row[3].write(document_analysis_summary(document_id))
+        row[4].write(format_timestamp_pst(document.get("uploaded_at") or ""))
+        if pending_id == document_id:
+            row[5].warning("Confirm below")
+            st.warning("Delete this test upload and its analysis data?")
+            confirm_col, cancel_col = st.columns([1, 1])
+            if confirm_col.button("Confirm Delete", key=f"confirm_delete_test_upload_{document_id}", type="primary"):
+                result = delete_test_document(document_id)
+                if result["deleted"]:
+                    if st.session_state.get("active_document_id") == document_id:
+                        st.session_state["active_document_id"] = None
+                    st.session_state.pop("_pending_test_upload_delete_id", None)
+                    message = f"Test upload #{document_id} and its analysis data were deleted."
+                    if result.get("file_cleanup_warning"):
+                        message = f"{message} {result['file_cleanup_warning']}"
+                    st.session_state["_test_upload_flash"] = message
+                    st.rerun()
+                st.error(result["reason"])
+            if cancel_col.button("Cancel", key=f"cancel_delete_test_upload_{document_id}"):
+                st.session_state.pop("_pending_test_upload_delete_id", None)
+                st.rerun()
+        elif row[5].button("Delete", key=f"delete_test_upload_{document_id}"):
+            st.session_state["_pending_test_upload_delete_id"] = document_id
+            st.rerun()
+
+    st.caption("Seeded demo documents remain protected and cannot be deleted from this interface.")

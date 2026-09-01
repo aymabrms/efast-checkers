@@ -2,8 +2,15 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from config import COMPANY_MASTER_PATH, DEMO_DATA_PATH, REVERT_REASONS_PATH
-from db import execute, insert_document, query, replace_document_analysis, save_reviewer_action
+from config import COMPANY_MASTER_PATH, DEMO_DATA_PATH, REVERT_REASONS_PATH, UPLOADS_DIR
+from db import (
+    delete_document_records,
+    execute,
+    insert_document,
+    query,
+    replace_document_analysis,
+    save_reviewer_action,
+)
 
 
 def load_json(path: Path):
@@ -20,6 +27,70 @@ def load_company_master() -> Dict:
 
 def load_revert_reasons() -> List[str]:
     return load_json(REVERT_REASONS_PATH)
+
+
+def demo_document_filenames() -> set:
+    """Return filenames from the configured demo suite, not display names."""
+    demo = load_demo_data()
+    suite = demo.get("demo_suite", [])
+    if suite:
+        return {entry["metadata"]["filename"] for entry in suite}
+    return {demo["demo_document"]["filename"]}
+
+
+def is_demo_document(document: Dict) -> bool:
+    return str(document.get("filename") or "") in demo_document_filenames()
+
+
+def document_analysis_summary(document_id: int) -> str:
+    """Build a compact status/recommendation label for the upload-management list."""
+    validations = get_validations(document_id)
+    status_priority = ("Failed", "Warning", "Needs Review", "Passed")
+    statuses = {str(row.get("status") or "") for row in validations}
+    analysis_status = next((status for status in status_priority if status in statuses), "")
+    actions = get_reviewer_actions(document_id)
+    recommendation = str(actions[0].get("final_recommendation") or "") if actions else ""
+    values = [value for value in (analysis_status, recommendation) if value]
+    return " / ".join(values) if values else "—"
+
+
+def delete_test_document(document_id: int) -> Dict:
+    """
+    Delete a non-demo document and its dependent data.
+
+    The stored filename is the only current association between a document and
+    its local upload. A same-named document keeps the file from being removed.
+    """
+    document = get_document(document_id)
+    if not document:
+        return {"deleted": False, "reason": "Document not found."}
+    if is_demo_document(document):
+        return {"deleted": False, "reason": "Seeded demo documents are protected."}
+
+    filename = str(document.get("filename") or "")
+    referenced_elsewhere = bool(
+        query(
+            "SELECT id FROM documents WHERE filename = ? AND id != ? LIMIT 1",
+            (filename, document_id),
+        )
+    )
+    local_file = UPLOADS_DIR / Path(filename).name if filename else None
+    if not delete_document_records(document_id):
+        return {"deleted": False, "reason": "Document could not be deleted."}
+
+    file_removed = False
+    file_cleanup_warning = ""
+    if local_file and not referenced_elsewhere and local_file.is_file():
+        try:
+            local_file.unlink()
+            file_removed = True
+        except OSError:
+            file_cleanup_warning = "The analysis data was deleted, but the local PDF could not be removed."
+    return {
+        "deleted": True,
+        "file_removed": file_removed,
+        "file_cleanup_warning": file_cleanup_warning,
+    }
 
 
 def seed_company_master() -> None:
