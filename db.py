@@ -48,7 +48,10 @@ def init_db() -> None:
         detected_period_match INTEGER,
         image_quality_flag TEXT,
         rotation_degrees INTEGER DEFAULT 0,
-        text_length INTEGER DEFAULT 0
+        text_length INTEGER DEFAULT 0,
+        original_text TEXT,
+        ocr_text TEXT,
+        extraction_source TEXT DEFAULT 'Text Layer'
     );
     CREATE TABLE IF NOT EXISTS validations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,6 +92,12 @@ def init_db() -> None:
         cur.execute("ALTER TABLE page_analysis ADD COLUMN rotation_degrees INTEGER DEFAULT 0")
     if "text_length" not in page_columns:
         cur.execute("ALTER TABLE page_analysis ADD COLUMN text_length INTEGER DEFAULT 0")
+    if "original_text" not in page_columns:
+        cur.execute("ALTER TABLE page_analysis ADD COLUMN original_text TEXT")
+    if "ocr_text" not in page_columns:
+        cur.execute("ALTER TABLE page_analysis ADD COLUMN ocr_text TEXT")
+    if "extraction_source" not in page_columns:
+        cur.execute("ALTER TABLE page_analysis ADD COLUMN extraction_source TEXT DEFAULT 'Text Layer'")
     conn.commit()
     conn.close()
 
@@ -135,9 +144,9 @@ def replace_document_analysis(document_id: int, pages: List[Dict], validations: 
             INSERT INTO page_analysis (
                 document_id, page_number, page_type, orientation, text_preview,
                 detected_company_match, detected_period_match, image_quality_flag,
-                rotation_degrees, text_length
+                rotation_degrees, text_length, original_text, ocr_text, extraction_source
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 document_id,
@@ -150,6 +159,9 @@ def replace_document_analysis(document_id: int, pages: List[Dict], validations: 
                 page.get("image_quality_flag"),
                 page.get("rotation_degrees", page.get("rotation", 0)) or 0,
                 page.get("text_length", len(str(page.get("text_preview") or "").strip())),
+                page.get("original_text", page.get("text_preview", "")),
+                page.get("ocr_text", ""),
+                page.get("extraction_source", "Text Layer"),
             ),
         )
     for item in validations:

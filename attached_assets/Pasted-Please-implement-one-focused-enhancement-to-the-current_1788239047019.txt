@@ -1,0 +1,310 @@
+Please implement one focused enhancement to the current SEC eFAST Checkers prototype:
+
+SIMPLE OCR FALLBACK V1
+
+IMPORTANT:
+- Inspect the current implementation and environment first
+- Keep this low-risk and low-credit
+- Do NOT redesign the UI
+- Do NOT add ML models, spaCy/NLP, external APIs, table-recognition frameworks, or background workers
+- Do NOT modify GIS, Historical View, Rankings, AFS completeness business rules, demo seeding, final reviewer disposition, Multi-Year AFS Support, or Computed Confidence logic unless a very small compatibility update is required
+- Preserve Test Upload Management
+- OCR must be a FALLBACK only
+- Generate the requested validation MD file
+- Stop after this scope
+
+GOAL
+
+Allow scanned or image-only PDF pages with little/no usable text to undergo simple OCR so they can participate in the existing prototype workflow.
+
+Existing text-layer PDFs must continue using normal PDF text extraction.
+
+--------------------------------------------------
+1. VERIFY OCR AVAILABILITY FIRST
+--------------------------------------------------
+
+Before changing application behavior:
+
+- check whether Tesseract OCR is available in the current Replit environment
+- verify using the equivalent of:
+  tesseract --version
+
+Preferred implementation:
+- Tesseract OCR
+- Python wrapper such as pytesseract only if needed
+- existing PyMuPDF/PIL capabilities where possible
+
+Do NOT introduce a heavy OCR framework in this V1.
+
+If Tesseract cannot be installed or used cleanly in the current Replit environment:
+- do NOT force a large workaround
+- stop implementation
+- create the requested validation MD documenting the blocker and recommended next option
+
+--------------------------------------------------
+2. OCR FALLBACK RULE
+--------------------------------------------------
+
+Keep normal PDF extraction as the primary path.
+
+For each uploaded real PDF page:
+
+A. Attempt existing normal text extraction first.
+
+B. If extracted text is sufficiently usable:
+- keep the existing text
+- do NOT OCR the page
+
+C. If extracted text is below the existing low-text threshold / possible-scan threshold:
+- render only that page to an image
+- run OCR on that page
+- use OCR text only when it improves usable text content
+
+Do not OCR every page unnecessarily.
+
+--------------------------------------------------
+3. KEEP ORIGINAL AND OCR TEXT DISTINCT
+--------------------------------------------------
+
+For reviewer traceability, preserve:
+
+- original extracted PDF text
+- OCR fallback text when OCR was used
+- extraction source:
+  - Text Layer
+  - OCR Fallback
+
+Use the smallest safe implementation.
+
+If a database change is unnecessary, avoid one.
+
+If the current page_analysis schema needs one small field such as extraction_source or ocr_used, add only the minimum required migration and preserve backward compatibility.
+
+--------------------------------------------------
+4. FEED OCR TEXT INTO EXISTING PIPELINE
+--------------------------------------------------
+
+When OCR fallback produces usable text, pass that text through the CURRENT:
+
+- page classification
+- company / period checking
+- AFS completeness checking
+- BIR text-evidence checking
+- financial-label extraction
+- multi-year extraction
+- suspicious-number detection
+- computed confidence / HITL workflow
+
+Do NOT create a separate OCR-only validation engine.
+
+The same business rules must apply regardless of whether text came from:
+- PDF text layer
+or
+- OCR fallback.
+
+--------------------------------------------------
+5. OCR SAFETY RULES
+--------------------------------------------------
+
+OCR output must never be treated as automatically authoritative.
+
+Preserve current safeguards:
+
+- malformed numbers remain Check Source
+- suspicious punctuation remains uncorrected
+- normalized value remains NULL when parsing is unsafe
+- no invented values
+- no demo fallback
+- no automatic filing Accept/Revert from OCR output
+
+Examples such as:
+
+6.837.912.90
+A8849,399.68
+
+must continue to be handled conservatively.
+
+--------------------------------------------------
+6. OCR + CONFIDENCE COMPATIBILITY
+--------------------------------------------------
+
+Do NOT call Tesseract confidence an ML probability.
+
+For V1:
+
+- keep the existing Computed Confidence formula
+- page quality should continue using prototype evidence already supported
+- if useful, record that the source was OCR Fallback for reviewer visibility
+
+Do NOT redesign the confidence weights in this iteration.
+
+If OCR text remains very poor:
+- the existing low-quality safety cap must still apply.
+
+--------------------------------------------------
+7. ROTATION
+--------------------------------------------------
+
+Before OCR, use existing PDF rotation metadata when available so a page with 90/180/270 metadata can be rendered in a readable orientation for OCR.
+
+Do NOT add advanced visual orientation detection yet.
+
+Clearly retain the current limitation:
+
+"Image-content rotation not represented in PDF metadata is not yet automatically detected."
+
+--------------------------------------------------
+8. PERFORMANCE / DEMO SAFETY
+--------------------------------------------------
+
+Keep OCR bounded for a live prototype.
+
+- OCR only pages needing fallback
+- process pages sequentially
+- avoid very high-resolution rendering
+- use a practical render resolution such as approximately 200 DPI unless the current environment requires another safe value
+- do not build background queues
+
+Add a simple working indicator while OCR is running if the current UI can support it cheaply.
+
+The application must not freeze indefinitely on an unreadable page.
+
+--------------------------------------------------
+9. DOCUMENT REVIEW UI
+--------------------------------------------------
+
+Add only small reviewer-facing visibility.
+
+For each page, display text source such as:
+
+Text Source: Text Layer
+
+or
+
+Text Source: OCR Fallback
+
+For OCR pages, a subtle note such as:
+
+"OCR fallback was used because little or no usable PDF text was detected."
+
+Do not add a new page/module.
+
+--------------------------------------------------
+10. TEST SCENARIOS
+--------------------------------------------------
+
+Test:
+
+A. Readable text-layer PDF
+Expected:
+normal text extraction used;
+OCR not invoked.
+
+B. Image-only / very-low-text PDF page
+Expected:
+OCR fallback invoked.
+
+C. OCR recovers useful page heading/text
+Expected:
+existing page classification can use OCR text.
+
+D. OCR financial page with recognizable supported figure
+Expected:
+existing extraction is attempted from OCR text;
+no demo values inserted.
+
+E. OCR produces malformed amount:
+6.837.912.90
+Expected:
+Check Source;
+unsafe value not normalized.
+
+F. Page with PDF rotation metadata 90/180/270
+Expected:
+existing rotation handling is respected before/while rendering for OCR.
+
+G. OCR remains unusable
+Expected:
+page remains Poor Readability / Manual Review;
+no fabricated result.
+
+H. Multi-year selected document
+Expected:
+OCR-derived text can participate in existing selected-year extraction rules.
+
+I. Computed Confidence
+Expected:
+continues to calculate;
+OCR does not automatically produce High confidence merely because OCR ran.
+
+J. Test Upload Management
+Expected:
+OCR test document and its analysis/file can still be deleted safely.
+
+K. Existing three demo documents
+Expected:
+remain intact and unchanged.
+
+--------------------------------------------------
+11. CREATE VALIDATION MD
+--------------------------------------------------
+
+Create:
+
+docs/SIMPLE_OCR_FALLBACK_V1_VALIDATION.md
+
+Include:
+
+1. Scope
+2. OCR engine/environment used
+3. Whether Tesseract was already available or how it was enabled
+4. Exact files changed
+5. OCR fallback trigger
+6. Text-layer vs OCR-source handling
+7. Rotation handling
+8. How OCR feeds existing validation/extraction
+9. Numeric safety behavior
+10. Computed Confidence compatibility
+11. Performance safeguards
+12. Test results A-K:
+
+Scenario | Expected | Actual | Pass/Fail
+
+13. Demo-data impact
+14. Database/schema impact
+15. Known limitations
+16. Explicit confirmation that:
+    - OCR is fallback-only
+    - no ML model was added
+    - no advanced table recognition was added
+    - OCR output is not automatically authoritative
+
+17. Final assessment:
+    - Safe for prototype testing
+    - Needs minor refinement
+    - Requires correction
+    - OCR environment unavailable
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+After implementation, stop and report:
+
+1. Whether OCR is technically available in the current Replit environment
+2. OCR engine used
+3. Exact files changed
+4. OCR fallback behavior implemented
+5. Test results A-K
+6. Any schema/database change
+7. Confirmation Multi-Year AFS Support still works
+8. Confirmation Computed Confidence + HITL still works
+9. Confirmation Test Upload Management still works
+10. Confirmation demos remain intact
+11. Confirmation this file was created:
+
+docs/SIMPLE_OCR_FALLBACK_V1_VALIDATION.md
+
+12. Confirmation app still runs
+
+STOP after this scope.

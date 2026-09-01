@@ -192,6 +192,10 @@ def render():
             # Source tag rendered inside expander for clarity
             if source_tag:
                 st.markdown(source_tag, unsafe_allow_html=True)
+            extraction_source = page.get("extraction_source") or "Text Layer"
+            st.markdown(f"**Text Source:** {extraction_source}")
+            if extraction_source == "OCR Fallback":
+                st.caption("OCR fallback was used because little or no usable PDF text was detected.")
             cols = st.columns(5)
             cols[0].write("Page Layout")
             cols[0].markdown(f"**{page.get('orientation') or 'Unknown'}**")

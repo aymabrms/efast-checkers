@@ -102,7 +102,8 @@ def render():
                 }
                 document_id = insert_document(metadata)
                 saved_path = prepare_uploaded_file(uploaded, UPLOADS_DIR)
-                raw_pages, extraction_errors = extract_pdf_pages(saved_path)
+                with st.spinner("Reading PDF text; using OCR only for low-text pages when available..."):
+                    raw_pages, extraction_errors = extract_pdf_pages(saved_path)
                 if extraction_errors:
                     for err in extraction_errors:
                         st.warning(f"PDF parser issue: {err}")
