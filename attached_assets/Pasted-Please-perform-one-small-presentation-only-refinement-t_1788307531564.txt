@@ -1,0 +1,173 @@
+Please perform one small presentation-only refinement to:
+
+DASHBOARD AFS/GIS EXECUTIVE SUMMARY V1
+
+IMPORTANT:
+- Inspect the current Dashboard first.
+- Do NOT change metric calculations, filters, validation logic, database queries, demo data, or any other module.
+- This is UI/presentation polish only.
+- Do NOT add dependencies.
+- Keep this credit-thrift.
+- Generate the requested validation MD.
+- STOP after this scope.
+
+==================================================
+1. REPORT VIEW SELECTOR
+==================================================
+
+Replace the small radio-style:
+
+All Reports / AFS / GIS
+
+control with three larger selectable dashboard tiles or segmented buttons.
+
+Options:
+
+ALL REPORTS
+AFS REPORTS
+GIS REPORTS
+
+The selected option should be visually obvious.
+
+Preferred presentation:
+
+Selected:
+- dark eFAST green background
+- white text
+
+Unselected:
+- white or very pale green background
+- green border
+- dark text
+
+If safely possible, show the current report count inside or beneath each option:
+
+All Reports
+4 Reports
+
+AFS Reports
+3 Reports
+
+GIS Reports
+1 Report
+
+Counts must use the existing dashboard calculations.
+
+The behavior/filtering must remain exactly the same.
+
+==================================================
+2. REDUCE DASHBOARD COLOR SATURATION
+==================================================
+
+Align dashboard charts with the current eFAST Checkers branding.
+
+Use a restrained institutional palette.
+
+General principles:
+
+- dark green = primary information
+- medium/sage green = secondary information
+- green = Accepted / Passed
+- muted amber = Needs Review / Warning
+- muted red = Reverted / Failed
+- neutral gray/slate = Pending / No Final Recommendation
+
+Avoid unnecessary bright blue/red combinations.
+
+Do not use a different strong color simply to distinguish every category.
+
+==================================================
+3. REPORTS BY TYPE
+==================================================
+
+Use related green tones:
+
+AFS = primary dark green
+GIS = secondary/sage green
+
+Keep labels readable.
+
+==================================================
+4. REVIEW OUTCOMES
+==================================================
+
+Use semantic status colors consistently:
+
+Accepted = green
+Needs Review = muted amber
+Reverted = muted red
+No Final Recommendation / Pending = neutral gray
+
+Do not use bright blue for Accepted if green already represents accepted/pass status elsewhere.
+
+==================================================
+5. TOP VALIDATION ISSUES
+==================================================
+
+Use semantic colors:
+
+Failed = muted red
+Warning = muted amber
+Needs Review = neutral amber/slate as appropriate
+
+Avoid highly saturated default chart colors.
+
+Do not change any counts or validation aggregation.
+
+==================================================
+6. SUMMARY CARDS
+==================================================
+
+Keep summary cards primarily neutral/white.
+
+Do not give every card a different strong background.
+
+Use the current green accent for:
+- headings
+- borders
+- important values where appropriate.
+
+The cards should remain easy to scan and should visually match the sidebar branding.
+
+==================================================
+7. REGRESSION
+==================================================
+
+Verify:
+
+A. All Reports tile filters correctly
+B. AFS tile filters correctly
+C. GIS tile filters correctly
+D. counts remain unchanged
+E. Recent Document Queue filtering remains unchanged
+F. Reports by Type values remain unchanged
+G. Review Outcomes values remain unchanged
+H. Validation Issues values remain unchanged
+I. no database/data changes occur
+J. app starts successfully
+
+==================================================
+8. VALIDATION DOCUMENT
+==================================================
+
+Create:
+
+docs/DASHBOARD_VISUAL_POLISH_V1_VALIDATION.md
+
+Include:
+
+1. Exact files changed
+2. Report View tile implementation
+3. Final dashboard palette
+4. Status-color mapping
+5. Confirmation calculations were unchanged
+6. Test results A-J
+7. Database/data impact
+8. Known limitations
+
+Final assessment:
+- Safe for prototype testing
+- Needs minor refinement
+- Requires correction
+
+STOP after this scope.

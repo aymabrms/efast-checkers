@@ -15,6 +15,9 @@ OUTCOME_ORDER = (
     "No Final Recommendation / Pending",
 )
 ISSUE_STATUSES = ("Warning", "Failed", "Needs Review")
+REPORT_TYPE_COLORS = ["#0f5b3f", "#80a98a"]
+OUTCOME_COLORS = ["#b28a3a", "#2e7d5b", "#a65a5a", "#78848a"]
+ISSUE_COLORS = ["#b28a3a", "#a65a5a", "#78848a"]
 
 
 def _filtered_documents(documents, report_view):
@@ -44,6 +47,47 @@ def _selected_report_types(report_view, documents):
         str(document.get("report_type") or "").upper() == report_view
         for document in documents
     ) else []
+
+
+def _render_report_view_tiles(documents):
+    counts = {
+        "All Reports": len(documents),
+        "AFS": sum(
+            str(document.get("report_type") or "").upper() == "AFS"
+            for document in documents
+        ),
+        "GIS": sum(
+            str(document.get("report_type") or "").upper() == "GIS"
+            for document in documents
+        ),
+    }
+    report_view = st.session_state.get("dashboard_report_view", "All Reports")
+    if report_view not in REPORT_VIEW_OPTIONS:
+        report_view = "All Reports"
+        st.session_state["dashboard_report_view"] = report_view
+
+    st.markdown("**Report View**")
+    columns = st.columns(3)
+    labels = (
+        ("All Reports", "ALL REPORTS"),
+        ("AFS", "AFS REPORTS"),
+        ("GIS", "GIS REPORTS"),
+    )
+    for column, (value, label) in zip(columns, labels):
+        with column:
+            if st.button(
+                label,
+                key=f"dashboard_report_view_{value.lower().replace(' ', '_')}",
+                type="primary" if report_view == value else "secondary",
+                use_container_width=True,
+            ):
+                if st.session_state.get("dashboard_report_view") != value:
+                    st.session_state["dashboard_report_view"] = value
+                    st.rerun()
+            count = counts[value]
+            noun = "Report" if count == 1 else "Reports"
+            st.caption(f"{count} {noun}")
+    return report_view
 
 
 def _latest_recommendations():
@@ -215,8 +259,8 @@ def _render_reports_by_type(report_view, documents):
     if not rows:
         st.info("No report-type records are available for this view.")
         return
-    chart_df = pd.DataFrame(rows).set_index("Report Type")
-    st.bar_chart(chart_df, height=240, color="#0f5b3f")
+    chart_df = pd.DataFrame(rows).set_index("Report Type").T
+    st.bar_chart(chart_df, height=240, color=REPORT_TYPE_COLORS[:len(chart_df.columns)])
 
 
 def _render_review_outcomes(report_view, documents, outcomes):
@@ -243,7 +287,11 @@ def _render_review_outcomes(report_view, documents, outcomes):
         st.info("No reviewer outcomes are available for this view.")
         return
     chart_df = pd.DataFrame(rows).set_index("Report Type")
-    st.bar_chart(chart_df[list(OUTCOME_ORDER)], height=240)
+    st.bar_chart(
+        chart_df[list(OUTCOME_ORDER)],
+        height=240,
+        color=OUTCOME_COLORS,
+    )
     st.caption("Pending includes documents without a saved final recommendation.")
 
 
@@ -269,7 +317,7 @@ def _render_validation_issues(report_view, documents, validation_rows):
     )
     issue_df.index.name = "Validation Issue"
     issue_df.columns.name = None
-    st.bar_chart(issue_df, height=320)
+    st.bar_chart(issue_df, height=320, color=ISSUE_COLORS)
     st.caption("Counts are aggregated directly from stored validation results.")
 
 
@@ -284,15 +332,8 @@ def render():
         unsafe_allow_html=True,
     )
 
-    report_view = st.radio(
-        "Report View",
-        REPORT_VIEW_OPTIONS,
-        index=0,
-        horizontal=True,
-        key="dashboard_report_view",
-    )
-
     all_documents = get_documents()
+    report_view = _render_report_view_tiles(all_documents)
     documents = _filtered_documents(all_documents, report_view)
     recommendations = _latest_recommendations()
     validation_rows = query(
